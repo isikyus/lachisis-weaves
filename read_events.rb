@@ -109,12 +109,16 @@ output_callback = ->(sequence) {
   end
 }
 
-SVG_THREAD_SPACING = 3 # Space between character threads
+SVG_THREAD_WIDTH = 3
+SVG_THREAD_SPACING = SVG_THREAD_WIDTH * 2 # Space between character threads
 SVG_LOCATION_GAP = 2 # In thread widths
 
 SVG_TIME_GAP = 5 # Space between events horizontally
 SVG_BASE_DURATION = 10 # Space events take up
 SVG_EVENT_SPACE = SVG_TIME_GAP + SVG_BASE_DURATION
+
+SVG_LABEL_OFFSET = SVG_THREAD_WIDTH
+SVG_FONT_SIZE = SVG_THREAD_SPACING
 
 while ARGV[0].start_with?('-')
   option = ARGV.shift
@@ -158,6 +162,10 @@ while ARGV[0].start_with?('-')
         end
 
         xml_data << %{<path id="thread_#{character}" fill="none" stroke="black" stroke_width="3" d="M #{path_points.join(' ')}"/>}
+
+        start_x, start_y, *, end_x, end_y = *path_points
+        xml_data << %{<text x="#{start_x - SVG_LABEL_OFFSET}" y="#{start_y}" text-anchor="end" dominant-baseline="middle" font-size="#{SVG_FONT_SIZE}">#{character}</text>}
+        xml_data << %{<text x="#{end_x + SVG_LABEL_OFFSET}" y="#{end_y}" text-anchor="start" dominant-baseline="middle" font-size="#{SVG_FONT_SIZE}">#{character}</text>}
       end
 
       xml_data << '</svg>'

@@ -111,7 +111,10 @@ output_callback = ->(sequence) {
 
 SVG_THREAD_SPACING = 3 # Space between character threads
 SVG_LOCATION_GAP = 2 # In thread widths
-SVG_TIME_SPACING = 10 # Space between events horizontally
+
+SVG_TIME_GAP = 5 # Space between events horizontally
+SVG_BASE_DURATION = 10 # Space events take up
+SVG_EVENT_SPACE = SVG_TIME_GAP + SVG_BASE_DURATION
 
 while ARGV[0].start_with?('-')
   option = ARGV.shift
@@ -137,7 +140,7 @@ while ARGV[0].start_with?('-')
       end
 
       # TODO: could use Nokogiri here
-      max_x = sequence.length * SVG_TIME_SPACING
+      max_x = sequence.length * SVG_EVENT_SPACE
 
       location_spacing = (characters.length + SVG_LOCATION_GAP) * SVG_THREAD_SPACING
       max_y = locations.length * location_spacing
@@ -146,12 +149,12 @@ while ARGV[0].start_with?('-')
       threads.each do |character, events|
         path_points = events.flat_map do |index_and_event|
           index_and_event => {index:, event:}
-          x = index * SVG_TIME_SPACING
+          x = index * SVG_EVENT_SPACE
 
           y = locations.index(event.location) * location_spacing
           y += event.characters.index(character) * SVG_THREAD_SPACING
 
-          [x, y]
+          [x, y, x + SVG_BASE_DURATION, y]
         end
 
         xml_data << %{<path id="thread_#{character}" fill="none" stroke="black" stroke_width="3" d="M #{path_points.join(' ')}"/>}

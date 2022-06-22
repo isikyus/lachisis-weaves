@@ -109,12 +109,58 @@ output_callback = ->(sequence) {
   end
 }
 
+SVG_THREAD_SPACING = 3 # Space between character threads
+SVG_LOCATION_GAP = 2 # In thread widths
+SVG_TIME_SPACING = 10 # Space between events horizontally
+
 while ARGV[0].start_with?('-')
-  option = shift
+  option = ARGV.shift
 
   case option
   when '--'
     break # End of options
+
+  when '-s' # SVG
+    output_callback = ->(sequence) {
+      threads = {}
+      locations = []
+      characters = []
+
+      sequence.each_with_index do |timed_event, index|
+        locations |= [timed_event.event.location]
+        characters |= timed_event.event.characters
+
+        timed_event.event.characters.each do |c|
+          threads[c] ||= []
+          threads[c] << { index: index, event: timed_event.event }
+        end
+      end
+
+      # TODO: could use Nokogiri here
+      max_x = sequence.length * SVG_TIME_SPACING
+
+      location_spacing = (characters.length + SVG_LOCATION_GAP) * SVG_THREAD_SPACING
+      max_y = locations.length * location_spacing
+      xml_data = ['<?xml version="1.0"?>', '<svg>']
+
+      threads.each do |character, events|
+        path_points = events.flat_map do |index_and_event|
+          index_and_event => {index:, event:}
+          x = index * SVG_TIME_SPACING
+
+          y = locations.index(event.location) * location_spacing
+          y += event.characters.index(character) * SVG_THREAD_SPACING
+
+          [x, y]
+        end
+
+        xml_data << %{<path id="thread_#{character}" fill="none" stroke="black" stroke_width="3" d="M #{path_points.join(' ')}"/>}
+      end
+
+      xml_data << '</svg>'
+
+      puts xml_data
+    }
   end
 end
 

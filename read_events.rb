@@ -13,12 +13,17 @@ module Lachisis
     end
   end
 
+  class TimedEvent < Struct.new(:major, :minor, :event)
+  end
+
   class Parser < Nokogiri::XML::SAX::Document
-    def initialize
+    def initialize(&callback)
       @major_time = 0
       @minor_time = 0
       @sequence = {}
       @current = nil
+
+      @callback = callback
     end
 
     def processing_instruction(name, content)
@@ -84,16 +89,36 @@ module Lachisis
     end
 
     def end_document
+      event_stream = []
       @sequence.keys.sort.each do |major|
         @sequence[major].keys.sort.each do |minor|
           @sequence[major][minor].each do |event|
-            printf("%5s %5s : %s\n", major, minor, event)
+            event_stream << TimedEvent.new(major, minor, event)
           end
         end
       end
+
+      @callback.call(event_stream)
     end
   end
 end
 
-parser = Nokogiri::XML::SAX::Parser.new(Lachisis::Parser.new)
+output_callback = ->(sequence) {
+  sequence.each do |te|
+    printf("%5s %5s : %10s\n", te.major, te.minor, te.event)
+  end
+}
+
+while ARGV[0].start_with?('-')
+  option = shift
+
+  case option
+  when '--'
+    break # End of options
+  end
+end
+
+parser = Nokogiri::XML::SAX::Parser.new(
+  Lachisis::Parser.new(&output_callback)
+)
 parser.parse(File.open(ARGV[0]))

@@ -1,6 +1,6 @@
 # Lachisis Weaves
 
-An attempt at generating [XKCD-657-style](https://xkcd.com/657/) narrative
+An attempt at generating [xkcd-657-style](https://xkcd.com/657/) narrative
 charts from marked-up text.
 
 ## Usage

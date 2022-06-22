@@ -59,7 +59,7 @@ module Lachisis
           @sequence[t] ||= {}
           @sequence[t][0] ||= []
 
-          event = @sequence[t][0].detect { |e| e.location == @current.location }
+          event = @sequence[t][0].detect { |e| e.location == location }
           unless event
             event = Event.new(location, [])
             @sequence[t][0] << event

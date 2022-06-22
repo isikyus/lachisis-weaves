@@ -60,7 +60,11 @@ module Lachisis
           @sequence[t][0] ||= []
 
           event = @sequence[t][0].detect { |e| e.location == @current.location }
-          event ||= Event.new(location, [])
+          unless event
+            event = Event.new(location, [])
+            @sequence[t][0] << event
+          end
+
           event.characters |= new_chars
 
           @major_time = t

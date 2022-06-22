@@ -70,14 +70,16 @@ module Lachisis
           @major_time = t
           @current = event
         end
+
+        @minor_time = 0
       else
+        @minor_time += 1
         @current = Event.new(location || @current.location,
                              existing_chars | new_chars)
 
         @sequence[@major_time] ||= {}
         @sequence[@major_time][@minor_time] ||= []
         @sequence[@major_time][@minor_time] << @current
-        @minor_time += 1
       end
     end
 

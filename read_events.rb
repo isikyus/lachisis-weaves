@@ -20,7 +20,8 @@ module Lachisis
     def initialize(&callback)
       @major_time = 0
       @minor_time = 0
-      @sequence = {}
+      @sequence = { :initial => {0 => []} }
+      @was_always_there = []
       @current = nil
 
       @callback = callback
@@ -31,18 +32,19 @@ module Lachisis
 
       location = nil
       existing_chars = @current&.characters || []
-      new_chars = []
+      entering_chars = []
+      present_chars = []
       times = []
 
       updates = content.strip.split(/\s+/)
       updates.each do |update|
-        name, value, *extra = update.split('=')
+        event, value, *extra = update.split(':')
 
-        if name.nil? || value.nil? || (extra || []).any?
+        if event.nil? || value.nil? || (extra || []).any?
           raise "Invalid update: expected x=y, got \"#{update}\""
         end
 
-        case name
+        case event
         when 'time'
           times << value.to_f
           existing_chars = []
@@ -51,15 +53,22 @@ module Lachisis
           location = value
           existing_chars = []
 
-        when 'char'
-          new_chars << value
+        when 'enter'
+          entering_chars << value
+
+        when 'present'
+          present_chars << value
 
         else
           raise "Unknown update type #{update}"
         end
       end
 
+      entering_chars += present_chars
+
       if times.any?
+        raise "Invalid processing instruction #{content}: need location" unless location
+
         times.sort.each do |t|
           @sequence[t] ||= {}
           @sequence[t][0] ||= []
@@ -70,7 +79,7 @@ module Lachisis
             @sequence[t][0] << event
           end
 
-          event.characters |= new_chars
+          event.characters |= entering_chars
 
           @major_time = t
           @current = event
@@ -79,20 +88,45 @@ module Lachisis
         @minor_time = 0
       else
         @minor_time += 1
-        @current = Event.new(location || @current.location,
-                             existing_chars | new_chars)
+        location ||= @current.location
+        @current = Event.new(location,
+                             existing_chars | entering_chars)
 
         @sequence[@major_time] ||= {}
         @sequence[@major_time][@minor_time] ||= []
         @sequence[@major_time][@minor_time] << @current
       end
+
+      present_chars.each do |char|
+        @was_always_there << {
+          character: char,
+          location: location,
+          since: [@major_time, @minor_time]
+        }
+
+        initial_location_event = @sequence[:initial][0].detect { |e| e.location == location }
+        unless initial_location_event
+          initial_location_event = Event.new(location, [])
+          @sequence[:initial][0] << initial_location_event
+        end
+        initial_location_event.characters << char
+      end
     end
 
     def end_document
       event_stream = []
-      @sequence.keys.sort.each do |major|
+      sorted_keys = [:initial, *(@sequence.keys - [:initial]).sort]
+      sorted_keys.each do |major|
         @sequence[major].keys.sort.each do |minor|
           @sequence[major][minor].each do |event|
+            unless major == :initial
+              always_there_chars = @was_always_there.select do |entry|
+                entry[:location] == event.location &&
+                  ((entry[:since] <=> [major, minor]) < 0)
+              end.map { |e| e[:character] }
+              event.characters += always_there_chars
+            end
+
             event_stream << TimedEvent.new(major, minor, event)
           end
         end

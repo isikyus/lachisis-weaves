@@ -20,17 +20,24 @@ equals signs (not even in quotes).
 
 Names must be `char`, `location`, or `time`, like so:
 
-* `<?lachisis location=somewhere char=someone ?>` Record an event that `someone`
-  was at `somewhere`, using the current major timestamp (default 0.0),
+* `<?lachisis location:somewhere enter:someone ?>` Record an event that `someone`
+  arrived at `somewhere`, using the current major timestamp (default 0.0),
   and the next minor timestamp (whatever the last event's minor timestamp
   was, plus one; starts at 0).
 
-* `<?lachisis char=another_person ?>` Record a new event at the current location
+* `<?lachisis location:somewhere present:someone ?>` As above, except records
+    that `someone` was here all along. Currently this only works if this is the character's
+    first appearence in the entire story.
+
+    * [ ] Technically this should only back-propogate to earlier points in time (e.g. if
+          you used it in a flashback) but I haven't built that.
+
+* `<?lachisis enter:another_person ?>` Record a new event at the current location
   (wherever the last event was), with all the current characters plus
   `another_person`. Again, uses the current major timestamp and next minor
   timestamp.
 
-* `<?lachisis char=stranger location=elsewhere time=2 ?>` Record that `stranger`
+* `<?lachisis enter:stranger location:elsewhere time:2 ?>` Record that `stranger`
   was at `elsewhere` at time 2.0 (time values are floating-point numbers). This
   sets the "major timestamp" to 2.0, and resets the minor timestamp to 0.
 
@@ -39,11 +46,11 @@ Names must be `char`, `location`, or `time`, like so:
   timestamp and minor timestamp 0), recording that all characters in both
   instructions were together in one place at that time.
 
-* `<?lachisis char=statue location=gallery time=2 time=0 ?>` Records that
+* `<?lachisis enter:statue location:gallery time:2 time:0 ?>` Records that
   `statue` was at `gallery` at both times 0 and 2 (and implicitly all times
    in beteween), and sets the major timestamp to 2 (as it's assumed the story
    continues from the last point in that range).
 
-* `<?lachisis char=statue char=someone location=atrium ?>` Records that
+* `<?lachisis enter:statue enter:someone location:atrium ?>` Records that
   `statue` and `someone` were together in `atrium`, at the current
   major/next minor timestamp

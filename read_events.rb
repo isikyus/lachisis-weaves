@@ -1,15 +1,19 @@
 require 'nokogiri'
 
 require_relative 'lachisis/event'
+require_relative 'lachisis/weave'
 
 module Lachisis
   NAMESPACE = 'lachisis'
 
   class Parser < Nokogiri::XML::SAX::Document
+    # Time that should be before all other events
+    INITIAL = -1000
+
     def initialize(&callback)
       @major_time = 0
       @minor_time = 0
-      @sequence = { :initial => {0 => []} }
+      @weave = Weave.new
       @was_always_there = []
       @current = nil
 
@@ -57,34 +61,27 @@ module Lachisis
 
       if times.any?
         raise "Invalid processing instruction #{content}: need location" unless location
+        @minor_time = 0
 
         times.sort.each do |t|
-          @sequence[t] ||= {}
-          @sequence[t][0] ||= []
-
-          event = @sequence[t][0].detect { |e| e.location == location }
-          unless event
-            event = Event.new(location, [])
-            @sequence[t][0] << event
-          end
-
+          event ||= Event.new(location, [])
           event.characters |= entering_chars
 
           @major_time = t
+          @weave.add(@major_time, @minor_time, event)
+
           @current = event
         end
-
-        @minor_time = 0
       else
         @minor_time += 1
         location ||= @current.location
         @current = Event.new(location,
                              existing_chars | entering_chars)
 
-        @sequence[@major_time] ||= {}
-        @sequence[@major_time][@minor_time] ||= []
-        @sequence[@major_time][@minor_time] << @current
+        @weave.add(@major_time, @minor_time, @current)
       end
+
+      @weave.add(INITIAL, 0, Event.new(location, present_chars)) if present_chars.any?
 
       present_chars.each do |char|
         @was_always_there << {
@@ -92,43 +89,20 @@ module Lachisis
           location: location,
           since: [@major_time, @minor_time]
         }
-
-        initial_location_event = @sequence[:initial][0].detect { |e| e.location == location }
-        unless initial_location_event
-          initial_location_event = Event.new(location, [])
-          @sequence[:initial][0] << initial_location_event
-        end
-        initial_location_event.characters << char
       end
     end
 
     def end_document
-      event_stream = []
-      sorted_keys = [:initial, *(@sequence.keys - [:initial]).sort]
-      sorted_keys.each do |major|
-        @sequence[major].keys.sort.each do |minor|
-          @sequence[major][minor].each do |event|
-            unless major == :initial
-              always_there_chars = @was_always_there.select do |entry|
-                entry[:location] == event.location &&
-                  ((entry[:since] <=> [major, minor]) < 0)
-              end.map { |e| e[:character] }
-              event.characters += always_there_chars
-            end
-
-            event_stream << TimedEvent.new(major, minor, event)
-          end
-        end
-      end
-
-      @callback.call(event_stream)
+      @callback.call(@weave)
     end
   end
 end
 
-output_callback = ->(sequence) {
-  sequence.each do |te|
-    printf("%5s %5s : %10s\n", te.major, te.minor, te.event)
+output_callback = ->(weave) {
+  weave.frames.each do |frame|
+    frame.events.each do |event|
+      printf("%5s %5s : %10s\n", frame.major, frame.minor, event)
+    end
   end
 }
 
@@ -156,23 +130,25 @@ while ARGV[0].start_with?('-')
     break # End of options
 
   when '-s' # SVG
-    output_callback = ->(sequence) {
+    output_callback = ->(weave) {
       threads = {}
       locations = []
       characters = []
 
-      sequence.each_with_index do |timed_event, index|
-        locations |= [timed_event.event.location]
-        characters |= timed_event.event.characters
+      weave.frames.each_with_index do |frame, index|
+        frame.events.each do |event|
+          locations |= [event.location]
+          characters |= event.characters
 
-        timed_event.event.characters.each do |c|
-          threads[c] ||= []
-          threads[c] << { index: index, event: timed_event.event }
+          event.characters.each do |c|
+            threads[c] ||= []
+            threads[c] << { index: index, event: event }
+          end
         end
       end
 
       # TODO: could use Nokogiri here
-      max_x = sequence.length * SVG_EVENT_SPACE
+      max_x = weave.frames.length * SVG_EVENT_SPACE
 
       location_spacing = (characters.length + SVG_LOCATION_GAP) * SVG_THREAD_SPACING
       max_y = locations.length * location_spacing

@@ -143,6 +143,11 @@ SVG_EVENT_SPACE = SVG_TIME_GAP + SVG_BASE_DURATION
 SVG_LABEL_OFFSET = SVG_THREAD_WIDTH
 SVG_FONT_SIZE = SVG_THREAD_SPACING
 
+if ARGV.empty?
+  warn "Usage: #{$0} [-s] [--] file.xml"
+  exit 1
+end
+
 while ARGV[0].start_with?('-')
   option = ARGV.shift
 

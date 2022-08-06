@@ -5,20 +5,28 @@ charts from marked-up text.
 
 ## Usage
 
+For a text summary of who was where when:
+
 ```shell
 bundle exec ruby read_events.rb <filename>
 ```
 
-Where `<filename>` is a valid XML file. Lachisis (so far) ignores the XML and
-reads its specific `<?lachisis ?>` processing instructions, and generates a
+For SVG output:
+
+```shell
+bundle exec ruby read_events.rb -s <filename>
+```
+
+`<filename>` should be a valid XML file. Lachisis (so far) ignores the XML
+except for `<?lachisis ... ?>` processing instructions, and generates a
 sequence of "events" (in the relativity sense: a point in space-time) for
 graphing.
 
-Valid processing instructions consist of a sequence of pairs `name=value`,
+Valid processing instructions consist of a sequence of pairs `name:value`,
 separated by whitespace. Values must not contain whitespace or
 equals signs (not even in quotes).
 
-Names must be `char`, `location`, or `time`, like so:
+Example valid instructions:
 
 * `<?lachisis location:somewhere enter:someone ?>` Record an event that `someone`
   arrived at `somewhere`, using the current major timestamp (default 0.0),

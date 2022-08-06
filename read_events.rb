@@ -1,20 +1,9 @@
 require 'nokogiri'
 
+require_relative 'lachisis/event'
+
 module Lachisis
   NAMESPACE = 'lachisis'
-
-  class Event < Struct.new(:location, :characters)
-    def inspect
-      "<Event#{__id__}: #{to_s}>"
-    end
-
-    def to_s
-      "At %15s : %s" % [location, characters.sort.join(', ')]
-    end
-  end
-
-  class TimedEvent < Struct.new(:major, :minor, :event)
-  end
 
   class Parser < Nokogiri::XML::SAX::Document
     def initialize(&callback)

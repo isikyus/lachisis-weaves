@@ -12,69 +12,123 @@ RSpec.describe Lachisis::Weave do
     expect(weave.frames).to be_empty
   end
 
-  specify 'adding an event creates a frame' do
-    weave.add(major_time, minor_time, event)
+  describe '#add' do
+    specify 'adding an event creates a frame' do
+      weave.add(major_time, minor_time, event)
 
-    expect(weave.frames.length).to eq 1
+      expect(weave.frames.length).to eq 1
 
-    frame = weave.frames.first
-    expect(frame.major).to eq 100
-    expect(frame.minor).to eq 10
-    expect(frame.events).to eq Set[event]
-  end
-
-
-  context 'with an event already' do
-    let(:existing_event) { Lachisis::Event.new('elsewhere', %w[ iolillia sophie ]) }
-
-
-    context 'at the same time' do
-      before { weave.add(major_time, minor_time, existing_event) }
-
-      specify 'groups events with common time in one frame' do
-        expect do
-          weave.add(major_time, minor_time, event)
-        end.not_to change { weave.frames.length }.from(1)
-
-        frame = weave.frames.first
-        expect(frame.events).to eq Set[event, existing_event]
-      end
-
-      specify 'merges events with the same time and location' do
-        event.location = existing_event.location
-        weave.add(major_time, minor_time, event)
-
-        frame = weave.frames.first
-        expect(frame.events.length).to eq 1
-
-        merged_event = frame.events.first
-        expect(merged_event.location).to eq existing_event.location
-        expect(merged_event.characters).to match_array ['sophie', 'iolillia', 'alice', 'bob']
-      end
+      frame = weave.frames.first
+      expect(frame.major).to eq 100
+      expect(frame.minor).to eq 10
+      expect(frame.events).to eq Set[event]
     end
 
-    context 'at a different time' do
-      before { weave.add(major_time, minor_time - 10, existing_event) }
 
-      specify 'separates events in different frames' do
-        expect do
+    context 'with an event already' do
+      let(:existing_event) { Lachisis::Event.new('elsewhere', %w[ iolillia sophie ]) }
+
+      context 'at the same time' do
+        before { weave.add(major_time, minor_time, existing_event) }
+
+        specify 'groups events with common time in one frame' do
+          expect do
+            weave.add(major_time, minor_time, event)
+          end.not_to change { weave.frames.length }.from(1)
+
+          frame = weave.frames.first
+          expect(frame.events).to eq Set[event, existing_event]
+        end
+
+        specify 'merges events with the same time and location' do
+          event.location = existing_event.location
           weave.add(major_time, minor_time, event)
-        end.to change { weave.frames.length }.from(1).to(2)
 
-        frames = weave.frames
-        expect(frames.first.major).to eq major_time
-        expect(frames.first.minor).to eq minor_time - 10
-        expect(frames.first.events).to eq Set[existing_event]
+          frame = weave.frames.first
+          expect(frame.events.length).to eq 1
 
-        expect(frames.last.major).to eq major_time
-        expect(frames.last.minor).to eq minor_time
-        expect(frames.last.events).to eq Set[event]
+          merged_event = frame.events.first
+          expect(merged_event.location).to eq existing_event.location
+          expect(merged_event.characters).to match_array ['sophie', 'iolillia', 'alice', 'bob']
+        end
       end
 
-      specify 'keeps events in order regardless of time added' do
-        weave.add(major_time - 10, minor_time + 10, event)
+      context 'at a different time' do
+        before { weave.add(major_time, minor_time - 10, existing_event) }
 
-        expect(weave.frames.map(&:events)).to eq [Set[event], Set[existing_event]]
+        specify 'separates events in different frames' do
+          expect do
+            weave.add(major_time, minor_time, event)
+          end.to change { weave.frames.length }.from(1).to(2)
+
+          frames = weave.frames
+          expect(frames.first.major).to eq major_time
+          expect(frames.first.minor).to eq minor_time - 10
+          expect(frames.first.events).to eq Set[existing_event]
+
+          expect(frames.last.major).to eq major_time
+          expect(frames.last.minor).to eq minor_time
+          expect(frames.last.events).to eq Set[event]
+        end
+
+        specify 'keeps events in order regardless of time added' do
+          weave.add(major_time - 10, minor_time + 10, event)
+
+          expect(weave.frames.map(&:events)).to eq [Set[event], Set[existing_event]]
+        end
+      end
+    end
+  end
+
+  describe '#propagate!' do
+    context 'with multiple events and time between them' do
+      before do
+        weave.add(10, 0, Lachisis::Event.new('home', %w[ alice bob ]))
+        weave.add(10, 0, Lachisis::Event.new('delphi', %w[ sue ]))
+        weave.add(20, 0, Lachisis::Event.new('delphi', %w[ alice oracle ]))
+        weave.add(20, 5, Lachisis::Event.new('home', %w[ alice cathy sue ]))
+
+        weave.propagate!
+      end
+
+      specify 'assumes people stay in place after their last event' do
+        end_at_delphi, end_at_home, *rest = *weave.frames.last.events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(end_at_delphi.location).to eq 'delphi'
+        expect(end_at_delphi.characters).to eq Set['oracle']
+
+        expect(end_at_home.location).to eq 'home'
+        expect(end_at_home.characters).to eq Set['alice', 'bob', 'cathy', 'sue']
+      end
+
+      specify 'assumes people were there before their first event' do
+        start_at_delphi, start_at_home, *rest = *weave.frames.first.events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(start_at_delphi.location).to eq 'delphi'
+        expect(start_at_delphi.characters).to eq Set['oracle', 'sue']
+
+        expect(start_at_home.location).to eq 'home'
+        expect(start_at_home.characters).to eq Set['alice', 'bob', 'cathy']
+      end
+
+      specify 'between events at different locations, assumes people stay at their old location' do
+        middle_frame = weave.frames[1]
+        expect(middle_frame.major).to eq 20
+        expect(middle_frame.minor).to eq 0
+
+        middle_at_delphi, middle_at_home, *rest = *middle_frame.events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(middle_at_delphi.location).to eq 'delphi'
+        expect(middle_at_delphi.characters).to eq Set['oracle', 'sue', 'alice']
+
+        expect(middle_at_home.location).to eq 'home'
+        expect(middle_at_home.characters).to eq Set['bob', 'cathy']
       end
     end
   end

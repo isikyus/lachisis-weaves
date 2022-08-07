@@ -93,6 +93,7 @@ module Lachisis
     end
 
     def end_document
+      @weave.propagate!
       @callback.call(@weave)
     end
   end
@@ -138,7 +139,9 @@ while ARGV[0].start_with?('-')
       weave.frames.each_with_index do |frame, index|
         frame.events.each do |event|
           locations |= [event.location]
-          characters |= event.characters
+
+          # Convert to array since we care about order of characters
+          characters |= event.characters.to_a
 
           event.characters.each do |c|
             threads[c] ||= []

@@ -147,6 +147,8 @@ while ARGV[0].start_with?('-')
         end
       end
 
+      characters.sort
+
       # TODO: could use Nokogiri here
       max_x = weave.frames.length * SVG_EVENT_SPACE
 
@@ -154,16 +156,14 @@ while ARGV[0].start_with?('-')
       max_y = locations.length * location_spacing
       xml_data = ['<?xml version="1.0"?>', '<svg>']
 
-      character_row = nil
-      last_location = nil
       threads.each do |character, events|
         path_points = events.flat_map do |index_and_event|
           index_and_event => {index:, event:}
           x = index * SVG_EVENT_SPACE
 
-          # Reset where we put this char's thread if we're in a new location, or if another char is using this one.
-          character_row = nil if event.location != last_location || ![nil, character].include?(event.characters[character_row])
-          character_row ||= event.characters.index(character)
+          # Allocate character rows based on the global sorted list, so they
+          # don't cross over within events
+          character_row = (characters & event.characters.to_a).index(character)
 
           y = locations.index(event.location) * location_spacing
           y += character_row * SVG_THREAD_SPACING

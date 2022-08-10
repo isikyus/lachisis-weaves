@@ -1,3 +1,5 @@
+[![Maintainability](https://api.codeclimate.com/v1/badges/b0fca587162288adcf1c/maintainability)](https://codeclimate.com/github/isikyus/lachisis-weaves/maintainability)
+
 # Lachisis Weaves
 
 An attempt at generating [xkcd-657-style](https://xkcd.com/657/) narrative

@@ -9,7 +9,7 @@ module Lachisis
     end
 
     def initialize
-      @frames_events = {}
+      @events_by_time = {}
     end
 
     # View the weave as a sequence of "frames": time slices where one or more
@@ -17,7 +17,7 @@ module Lachisis
     #
     # @return [Array<Frame>]
     def frames
-      @frames_events.sort.map do |timestamp, events|
+      @events_by_time.sort.map do |timestamp, events|
         Frame.new(timestamp, events)
       end
     end
@@ -28,11 +28,11 @@ module Lachisis
     # @return [Hash{String, Array<Event>}]
     def threads
       {}.tap do |threads|
-        frames.each do |frame|
-          frame.events.each do |event|
+        @events_by_time.each do |timestamp, events|
+          events.each do |event|
             event.characters.each do |character|
               threads[character] ||= []
-              threads[character] << TimedEvent.new(frame.timestamp, event)
+              threads[character] << TimedEvent.new(timestamp, event)
             end
           end
         end
@@ -57,19 +57,19 @@ module Lachisis
     # @param timestamp [Lachisis::TimedEvent::Timestamp]
     # @param event [Lachisis::Event]
     def add_with_timestamp(timestamp, event)
-      @frames_events[timestamp] ||= Set[]
-      frame_set = @frames_events[timestamp]
+      @events_by_time[timestamp] ||= Set[]
+      events_at_time = @events_by_time[timestamp]
 
-      existing_event = frame_set.detect { |e| e.location == event.location }
+      existing_event = events_at_time.detect { |e| e.location == event.location }
 
       if existing_event
-        frame_set.delete(existing_event)
+        events_at_time.delete(existing_event)
 
         merged = Event.new(event.location,
                            existing_event.characters | event.characters)
-        frame_set << merged
+        events_at_time << merged
       else
-        frame_set << event
+        events_at_time << event
       end
     end
 

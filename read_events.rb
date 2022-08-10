@@ -153,16 +153,24 @@ while ARGV[0].start_with?('-')
       characters.sort
 
       # TODO: could use Nokogiri here
-      max_x = weave.frames.length * SVG_EVENT_SPACE
+
+      diagram_width = weave.frames.length * SVG_EVENT_SPACE
+
+      # HACK: should really use font metrics or similar
+      max_name_size = SVG_FONT_SIZE * characters.map(&:length).max
+      max_x = diagram_width + max_name_size * 2
 
       location_spacing = (characters.length + SVG_LOCATION_GAP) * SVG_THREAD_SPACING
       max_y = locations.length * location_spacing
-      xml_data = ['<?xml version="1.0"?>', '<svg>']
+      xml_data = [
+        '<?xml version="1.0"?>',
+        "<svg width='#{max_x}' height='#{max_y}'>"
+      ]
 
       threads.each do |character, events|
         path_points = events.flat_map do |index_and_event|
           index_and_event => {index:, event:}
-          x = index * SVG_EVENT_SPACE
+          x = max_name_size + (index * SVG_EVENT_SPACE)
 
           # Allocate character rows based on the global sorted list, so they
           # don't cross over within events

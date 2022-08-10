@@ -6,13 +6,6 @@ module Lachisis
 
     # All the events happening at a specific point in time.
     class Frame < Struct.new(:timestamp, :events)
-      def major
-        timestamp.major
-      end
-
-      def minor
-        timestamp.minor
-      end
     end
 
     def initialize
@@ -24,11 +17,8 @@ module Lachisis
     #
     # @return [Array<Frame>]
     def frames
-      @frames_events.sort_by { |major, _| major }.flat_map do |major, frames|
-        frames.sort_by { |minor, _| minor }.map do |minor, events|
-          timestamp = Lachisis::TimedEvent::Timestamp.new(major, minor)
-          Frame.new(timestamp, events)
-        end
+      @frames_events.sort.map do |timestamp, events|
+        Frame.new(timestamp, events)
       end
     end
 
@@ -57,10 +47,19 @@ module Lachisis
     # @param minor_time [Numeric]
     # @param event [Lachisis::Event]
     def add(major, minor, event)
-      @frames_events[major] ||= {}
-      @frames_events[major][minor] ||= Set.new
+      timestamp = Lachisis::TimedEvent::Timestamp.new(major, minor)
+      add_with_timestamp(timestamp, event)
+    end
 
-      frame_set = @frames_events[major][minor]
+    # As above, but use a timestamp object instead of separate
+    # major and minor times.
+    #
+    # @param timestamp [Lachisis::TimedEvent::Timestamp]
+    # @param event [Lachisis::Event]
+    def add_with_timestamp(timestamp, event)
+      @frames_events[timestamp] ||= Set[]
+      frame_set = @frames_events[timestamp]
+
       existing_event = frame_set.detect { |e| e.location == event.location }
 
       if existing_event
@@ -92,10 +91,10 @@ module Lachisis
             # Nothing to do - we already now where this person is
           elsif last_appearence
             # Still in the same place they were before
-            add(frame.major, frame.minor, Lachisis::Event.new(last_appearence.event.location, [character]))
+            add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, [character]))
           elsif thread.any?
             # Before start of thread; assume they're where we first see them
-            add(frame.major, frame.minor, Lachisis::Event.new(thread.first.event.location, [character]))
+            add_with_timestamp(frame.timestamp, Lachisis::Event.new(thread.first.event.location, [character]))
           else
             raise "Thread for #{character} exists but is empty. This should not happen."
           end

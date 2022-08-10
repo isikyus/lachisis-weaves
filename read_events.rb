@@ -102,7 +102,7 @@ end
 output_callback = ->(weave) {
   weave.frames.each do |frame|
     frame.events.each do |event|
-      printf("%5s %5s : %10s\n", frame.major, frame.minor, event)
+      printf("%11s : %10s\n", frame.timestamp, event)
     end
   end
 }

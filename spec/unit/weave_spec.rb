@@ -19,8 +19,8 @@ RSpec.describe Lachisis::Weave do
       expect(weave.frames.length).to eq 1
 
       frame = weave.frames.first
-      expect(frame.major).to eq 100
-      expect(frame.minor).to eq 10
+      expect(frame.timestamp.major).to eq 100
+      expect(frame.timestamp.minor).to eq 10
       expect(frame.events).to eq Set[event]
     end
 
@@ -62,12 +62,12 @@ RSpec.describe Lachisis::Weave do
           end.to change { weave.frames.length }.from(1).to(2)
 
           frames = weave.frames
-          expect(frames.first.major).to eq major_time
-          expect(frames.first.minor).to eq minor_time - 10
+          expect(frames.first.timestamp.major).to eq major_time
+          expect(frames.first.timestamp.minor).to eq minor_time - 10
           expect(frames.first.events).to eq Set[existing_event]
 
-          expect(frames.last.major).to eq major_time
-          expect(frames.last.minor).to eq minor_time
+          expect(frames.last.timestamp.major).to eq major_time
+          expect(frames.last.timestamp.minor).to eq minor_time
           expect(frames.last.events).to eq Set[event]
         end
 
@@ -117,8 +117,8 @@ RSpec.describe Lachisis::Weave do
 
       specify 'between events at different locations, assumes people stay at their old location' do
         middle_frame = weave.frames[1]
-        expect(middle_frame.major).to eq 20
-        expect(middle_frame.minor).to eq 0
+        expect(middle_frame.timestamp.major).to eq 20
+        expect(middle_frame.timestamp.minor).to eq 0
 
         middle_at_delphi, middle_at_home, *rest = *middle_frame.events.sort_by(&:location)
 

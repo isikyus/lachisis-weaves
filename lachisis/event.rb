@@ -36,26 +36,21 @@ module Lachisis
           .reject(&:zero?)
           .first || 0
       end
-    end
 
-    def initialize(major_or_timestamp, minor_or_event, event=nil)
-      if event
-        @timestamp = Timestamp.new(major_or_timestamp, minor_or_event)
-        @event = event
-      else
-        @timestamp = major_or_timestamp
-        @event = minor_or_event
+      def to_s
+        '%5s %5s' % [major, minor]
+      end
+
+      def inspect
+        "<#Timestamp #{to_s}>"
       end
     end
 
+    def initialize(timestamp, event)
+      @timestamp = timestamp
+      @event = event
+    end
+
     attr_reader :timestamp, :event
-
-    def major
-      timestamp.major
-    end
-
-    def minor
-      timestamp.minor
-    end
   end
 end

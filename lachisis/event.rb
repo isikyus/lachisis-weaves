@@ -25,6 +25,37 @@ module Lachisis
     end
   end
 
-  class TimedEvent < Struct.new(:major, :minor, :event)
+  class TimedEvent
+    class Timestamp < Struct.new(:major, :minor)
+      include Comparable
+
+      def <=>(other)
+        [major, minor]
+          .zip([other.major, other.minor])
+          .map { |ours, theirs| ours <=> theirs }
+          .reject(&:zero?)
+          .first || 0
+      end
+    end
+
+    def initialize(major_or_timestamp, minor_or_event, event=nil)
+      if event
+        @timestamp = Timestamp.new(major_or_timestamp, minor_or_event)
+        @event = event
+      else
+        @timestamp = major_or_timestamp
+        @event = minor_or_event
+      end
+    end
+
+    attr_reader :timestamp, :event
+
+    def major
+      timestamp.major
+    end
+
+    def minor
+      timestamp.minor
+    end
   end
 end

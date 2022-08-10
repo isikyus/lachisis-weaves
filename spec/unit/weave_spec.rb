@@ -131,5 +131,25 @@ RSpec.describe Lachisis::Weave do
         expect(middle_at_home.characters).to eq Set['bob', 'cathy']
       end
     end
+
+    context 'with someone whose last location had a lower minor timestamp' do
+      before do
+        weave.add(1.6, 1, Lachisis::Event.new('pans-house', ['pan']))
+        weave.add(1.6, 2, Lachisis::Event.new('great-pillar', %w[ pan sync ]))
+        weave.add(1.9, 0, Lachisis::Event.new('kitchen', ['sync']))
+
+        weave.propagate!
+      end
+
+      specify 'puts them in the frame they were in most recently' do
+        epilogues = weave.frames.last.events.sort_by(&:location)
+
+        expect(epilogues.map(&:location)).to eq(%w[ great-pillar kitchen ])
+        pillar, kitchen = *epilogues
+
+        expect(pillar.characters).to eq(Set['pan'])
+        expect(kitchen.characters).to eq(Set['sync'])
+      end
+    end
   end
 end

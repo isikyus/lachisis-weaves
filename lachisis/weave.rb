@@ -5,7 +5,14 @@ module Lachisis
   class Weave
 
     # All the events happening at a specific point in time.
-    class Frame < Struct.new(:major, :minor, :events)
+    class Frame < Struct.new(:timestamp, :events)
+      def major
+        timestamp.major
+      end
+
+      def minor
+        timestamp.minor
+      end
     end
 
     def initialize
@@ -19,7 +26,8 @@ module Lachisis
     def frames
       @frames_events.sort_by { |major, _| major }.flat_map do |major, frames|
         frames.sort_by { |minor, _| minor }.map do |minor, events|
-          Frame.new(major, minor, events)
+          timestamp = Lachisis::TimedEvent::Timestamp.new(major, minor)
+          Frame.new(timestamp, events)
         end
       end
     end
@@ -34,7 +42,7 @@ module Lachisis
           frame.events.each do |event|
             event.characters.each do |character|
               threads[character] ||= []
-              threads[character] << TimedEvent.new(frame.major, frame.minor, event)
+              threads[character] << TimedEvent.new(frame.timestamp, event)
             end
           end
         end
@@ -78,7 +86,7 @@ module Lachisis
       frames.each do |frame|
         threads_before.each do |character, thread|
           # TODO: could do this more efficiently if the type expressed that these were in order
-          last_appearence = thread.reverse.detect { |e| e.major <= frame.major && e.minor <= frame.minor }
+          last_appearence = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
 
           if last_appearence && frame.events.include?(last_appearence.event)
             # Nothing to do - we already now where this person is

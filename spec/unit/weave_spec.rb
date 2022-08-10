@@ -152,4 +152,33 @@ RSpec.describe Lachisis::Weave do
       end
     end
   end
+
+  describe '#threads' do
+    context 'with a simple weave' do
+      let(:together_at_home) { Lachisis::Event.new('home', %w[ hestia mercury ]) }
+      let(:mercury_alone) { Lachisis::Event.new('home', %w[ mercury ]) }
+      let(:hestia_alone) { Lachisis::Event.new('afar', %w[ hestia ]) }
+
+      before do
+        weave.add(1, 0, together_at_home)
+        weave.add(1, 1, hestia_alone)
+        weave.add(1, 2, mercury_alone)
+      end
+
+      specify 'returns characters\' individual event sequences' do
+        threads = weave.threads
+
+        expect(weave.threads['hestia'].map(&:event)).to eq [together_at_home, hestia_alone]
+        expect(weave.threads['mercury'].map(&:event)).to eq [together_at_home, mercury_alone]
+      end
+
+      specify 'returns adds correct timestamps to events' do
+        threads = weave.threads
+        timestamps = weave.frames.map(&:timestamp)
+
+        expect(weave.threads['hestia'].map(&:timestamp)).to eq timestamps.values_at(0, 1)
+        expect(weave.threads['mercury'].map(&:timestamp)).to eq timestamps.values_at(0, 2)
+      end
+    end
+  end
 end

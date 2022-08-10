@@ -28,7 +28,7 @@ module Lachisis
     # @return [Hash{String, Array<Event>}]
     def threads
       {}.tap do |threads|
-        @events_by_time.each do |timestamp, events|
+        @events_by_time.sort.each do |timestamp, events|
           events.each do |event|
             event.characters.each do |character|
               threads[character] ||= []

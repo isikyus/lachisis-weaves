@@ -154,11 +154,11 @@ RSpec.describe Lachisis::Weave do
   end
 
   describe '#threads' do
-    context 'with a simple weave' do
-      let(:together_at_home) { Lachisis::Event.new('home', %w[ hestia mercury ]) }
-      let(:mercury_alone) { Lachisis::Event.new('home', %w[ mercury ]) }
-      let(:hestia_alone) { Lachisis::Event.new('afar', %w[ hestia ]) }
+    let(:together_at_home) { Lachisis::Event.new('home', %w[ hestia mercury ]) }
+    let(:mercury_alone) { Lachisis::Event.new('home', %w[ mercury ]) }
+    let(:hestia_alone) { Lachisis::Event.new('afar', %w[ hestia ]) }
 
+    context 'with a simple weave' do
       before do
         weave.add(1, 0, together_at_home)
         weave.add(1, 1, hestia_alone)
@@ -179,6 +179,13 @@ RSpec.describe Lachisis::Weave do
         expect(weave.threads['hestia'].map(&:timestamp)).to eq timestamps.values_at(0, 1)
         expect(weave.threads['mercury'].map(&:timestamp)).to eq timestamps.values_at(0, 2)
       end
+    end
+
+    specify 'sorts events in each thread' do
+      weave.add(+100, 0, mercury_alone)
+      weave.add(-100, 0, together_at_home)
+
+      expect(weave.threads['mercury'].map(&:event)).to eq [together_at_home, mercury_alone]
     end
   end
 end

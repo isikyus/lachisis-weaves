@@ -133,12 +133,11 @@ while ARGV[0].start_with?('-')
   when '-s' # SVG
     output_callback = ->(weave) {
       threads = {}
-      locations = []
+      location_sizes = {}
       characters = []
 
       weave.frames.each_with_index do |frame, index|
         frame.events.each do |event|
-          locations |= [event.location]
 
           # Convert to array since we care about order of characters
           characters |= event.characters.to_a
@@ -147,6 +146,11 @@ while ARGV[0].start_with?('-')
             threads[c] ||= []
             threads[c] << { index: index, event: event }
           end
+
+          location_size = [location_sizes[event.location], event.characters.length]
+              .compact
+              .max
+          location_sizes[event.location] = location_size
         end
       end
 
@@ -160,8 +164,18 @@ while ARGV[0].start_with?('-')
       max_name_size = SVG_FONT_SIZE * characters.map(&:length).max
       max_x = diagram_width + max_name_size * 2
 
-      location_spacing = (characters.length + SVG_LOCATION_GAP) * SVG_THREAD_SPACING
-      max_y = locations.length * location_spacing
+      # Calculate where (horizontal row) to each location fits. Assume order stays the same.
+      # Start with a bit of space so the first line is readable-ish
+      edge_offset = SVG_LOCATION_GAP * SVG_THREAD_SPACING
+      last_location_end = 0
+
+      location_spacing = location_sizes.transform_values do |char_count|
+        start_y = last_location_end + edge_offset
+        last_location_end = start_y + char_count * SVG_THREAD_SPACING
+        start_y
+      end
+
+      max_y = last_location_end + edge_offset
       xml_data = [
         '<?xml version="1.0"?>',
         "<svg width='#{max_x}' height='#{max_y}'>"
@@ -176,7 +190,7 @@ while ARGV[0].start_with?('-')
           # don't cross over within events
           character_row = (characters & event.characters.to_a).index(character)
 
-          y = locations.index(event.location) * location_spacing
+          y = location_spacing[event.location]
           y += character_row * SVG_THREAD_SPACING
 
           last_location = event.location

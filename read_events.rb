@@ -114,7 +114,53 @@ while ARGV[0].start_with?('-')
   end
 end
 
-parser = Nokogiri::XML::SAX::Parser.new(
-  Lachisis::Parser.new(&output_callback)
-)
-parser.parse(File.open(ARGV[0]))
+
+parser = Lachisis::Parser.new(&output_callback)
+
+class LineNumberTrackingParser
+  class LocatedError < Lachisis::Parser::Error
+    def initialize(filename, line, position, cause)
+      super("#{filename}:#{line} (near byte #{position}): ERROR #{cause.message}")
+      set_backtrace(cause.backtrace)
+    end
+
+    attr_reader :cause
+  end
+
+  def initialize(sax_document)
+    @sax_document = sax_document
+  end
+
+  # @param filename_or_io [String,IO]
+  def parse(filename_or_io)
+    if filename_or_io.is_a?(IO)
+      filename = '<input>'
+      io = filename_or_io
+    else
+      filename = filename_or_io
+      io = File.open(filename)
+    end
+
+    sax_parser = Nokogiri::XML::SAX::PushParser.new(@sax_document, filename)
+
+    io.each_line.each_with_index do |line, line_number|
+      begin
+        sax_parser << line
+      rescue Lachisis::Parser::Error => e
+        # each_with_index uses 0-based indexing, but we want 1-based for the human-readable line number
+        raise LocatedError.new(filename, line_number + 1, io.pos, e)
+      end
+    end
+
+    sax_parser.finish
+  end
+end
+
+begin
+  parser_with_line_info = LineNumberTrackingParser.new(parser)
+  parser_with_line_info.parse(ARGV[0])
+rescue LineNumberTrackingParser::LocatedError => e
+  warn e.message
+
+  exit 1
+end

@@ -7,6 +7,12 @@ module Lachisis
   NAMESPACE = 'lachisis'
 
   class Parser < Nokogiri::XML::SAX::Document
+    class Error < StandardError
+      def initialize(message)
+        super("XML parse error: #{message}")
+      end
+    end
+
     # Time that should be before all other events
     INITIAL = -1000
 
@@ -18,6 +24,14 @@ module Lachisis
       @current = nil
 
       @callback = callback
+    end
+
+    def warning(message)
+      warn "XML parse warning: #{message}"
+    end
+
+    def error(message)
+      raise Error, message
     end
 
     def processing_instruction(name, content)

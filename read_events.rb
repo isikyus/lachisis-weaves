@@ -24,7 +24,7 @@ while ARGV[0].start_with?('-')
     break # End of options
 
   when '-s' # SVG
-    @layout ||= Lachisis::SVG::SortLayout.new
+    @layout ||= Lachisis::SVG::SimulatedAnnealing.new
     renderer = Lachisis::SVG.new(@layout)
     output_callback = ->(weave) {
       puts renderer.call(weave)

@@ -25,10 +25,16 @@ module Lachisis
       end
 
       def crossing_number(weave)
+        locations, characters = layout(weave)
+        count_crossings(weave, locations, characters)
+      end
+
+      private
+
+      def count_crossings(weave, locations, characters)
         crossings = 0
         initial, *frames = weave.frames
 
-        locations, characters = layout(weave)
         last_order = char_order(locations, characters, initial)
 
         frames.each do |frame|
@@ -39,8 +45,6 @@ module Lachisis
 
         crossings
       end
-
-      private
 
       # Work out vertical order of characters in a frame, based on layout
       def char_order(locations, characters, frame)
@@ -97,6 +101,83 @@ module Lachisis
           weave.locations.sort,
           weave.characters.sort
         ]
+      end
+    end
+
+    class SimulatedAnnealing < Layout
+      SAMPLES_PER_ITERATION = 10
+      STARTING_TEMPERATURE = 100.0
+
+      def initialize
+        # Chosen by fair dice roll ...
+        # Actually just constant for now so results are deterministic
+        @random = Random.new(4)
+      end
+
+      def layout(weave)
+        temperature = STARTING_TEMPERATURE
+        best_locations = weave.locations
+        best_characters = weave.characters
+        best_score = count_crossings(weave, best_locations, best_characters)
+
+        while(temperature > 0.001)
+          improvement = 0
+
+          log("Temperature #{temperature}")
+          samples = SAMPLES_PER_ITERATION.times.map do
+            locs, chars = shuffle(temperature, best_locations, best_characters)
+            score = count_crossings(weave, locs, chars)
+            
+            log("- #{score}")
+
+            {
+              locs: locs,
+              chars: chars,
+              score: count_crossings(weave, locs, chars)
+            }
+          end
+
+          candidate = samples.min_by(&:first)
+
+          if candidate[:score] > best_score
+            improvement = best_score - candidate[:score]
+            best_score = candidate[:score]
+            best_locations = candidate[:locs]
+            best_characters = candidate[:chars]
+          end
+
+          log("- improvement this round: #{improvement}\n")
+
+          # Decreasing exponentially is good for this, right?
+          temperature *= 0.5
+        end
+
+        [best_locations, best_characters]
+      end
+
+      private
+
+      def shuffle(temperature, locations, characters)
+        [
+          shuffle_array(temperature, locations),
+          shuffle_array(temperature, characters)
+        ]
+      end
+
+      def shuffle_array(temperature, array)
+        a = array.dup
+        probability = temperature / STARTING_TEMPERATURE
+        (array.length / 2).times do
+          i1 = @random.rand(array.length)
+          i2 = @random.rand(array.length)
+          a[i1], a[i2] = a[i2], a[i1]
+        end
+
+        a
+      end
+
+      def log msg
+        $stderr.puts(msg)
       end
     end
 

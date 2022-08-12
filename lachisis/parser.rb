@@ -20,7 +20,6 @@ module Lachisis
       @major_time = 0
       @minor_time = 0
       @weave = Weave.new
-      @was_always_there = []
       @current = nil
 
       @callback = callback
@@ -93,16 +92,6 @@ module Lachisis
                              existing_chars | entering_chars)
 
         @weave.add(@major_time, @minor_time, @current)
-      end
-
-      @weave.add(INITIAL, 0, Event.new(location, present_chars)) if present_chars.any?
-
-      present_chars.each do |char|
-        @was_always_there << {
-          character: char,
-          location: location,
-          since: [@major_time, @minor_time]
-        }
       end
     end
 

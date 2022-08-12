@@ -11,17 +11,6 @@ output_callback = ->(weave) {
   end
 }
 
-SVG_THREAD_WIDTH = 3
-SVG_THREAD_SPACING = SVG_THREAD_WIDTH * 2 # Space between character threads
-SVG_LOCATION_GAP = 2 # In thread widths
-
-SVG_TIME_GAP = 5 # Space between events horizontally
-SVG_BASE_DURATION = 10 # Space events take up
-SVG_EVENT_SPACE = SVG_TIME_GAP + SVG_BASE_DURATION
-
-SVG_LABEL_OFFSET = SVG_THREAD_WIDTH
-SVG_FONT_SIZE = SVG_THREAD_SPACING
-
 if ARGV.empty?
   warn "Usage: #{$0} [-s] [--] file.xml"
   exit 1
@@ -35,7 +24,8 @@ while ARGV[0].start_with?('-')
     break # End of options
 
   when '-s' # SVG
-    renderer = Lachisis::SVG.new
+    @layout ||= Lachisis::SVG::SortLayout.new
+    renderer = Lachisis::SVG.new(@layout)
     output_callback = ->(weave) {
       puts renderer.call(weave)
     }

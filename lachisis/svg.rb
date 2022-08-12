@@ -19,9 +19,75 @@ module Lachisis
     # order, events at their time and location, and threads running through their
     # events.)
 
+    class Layout
+      def layout(weave)
+        raise 'To be implemented by subclass'
+      end
+
+      def crossing_number(weave)
+        crossings = 0
+        initial, *frames = weave.frames
+
+        locations, characters = layout(weave)
+        last_order = char_order(locations, characters, initial)
+
+        frames.each do |frame|
+          new_order = char_order(locations, characters, frame)
+          crossings += crossings(last_order, new_order)
+          last_order = new_order
+        end
+
+        crossings
+      end
+
+      private
+
+      # Work out vertical order of characters in a frame, based on layout
+      def char_order(locations, characters, frame)
+        # TECHNICAL NOTE: this isn't a comparison sort;
+        # radix sort would work here since I know the exact place of each
+        # location=event in the final array. But I'm not sure how to tell
+        # Ruby to use this optimisation.
+        events = frame.events.sort_by { |e| locations.index(e.location) }
+
+        events.flat_map do |e|
+          e.characters.sort_by { |c| characters.index(c) }
+        end
+      end
+
+      # Calculate the number of lines that cross if you link each element
+      # in the input array to the matching one in the output.
+      def crossings(from, to)
+        # Only care about things that are actually in both sides
+        can_cross = from & to
+
+        # Count number of crossings for each character
+        individual_counts = can_cross.map do |char|
+          was = from.index(char)
+          was_below = from[0..was] # Graphics! Y-axis increases going down
+          was_above = from[(was+1)..-1]
+
+          now = to.index(char)
+          now_below = to[0..was]
+          now_above = to[(was+1)..-1]
+
+          crossed = (was_below & now_above) + (was_above & now_below)
+          #$stderr.puts("#{crossed.length} crossings for #{char} (was #{was}, now #{now})")
+          crossed.length
+        end
+
+        # The above double-counts because each crossing involves
+        # two lines. Correct for that.
+        double_crossings = individual_counts.sum
+        raise "Double crossings should be even but #{from.inspect} and #{to.inspect} seem to cross #{double_crossings} times" unless double_crossings.even?
+
+        double_crossings / 2
+      end
+    end
+
     # Minimal algorithm that sort of works: sort by location name,
     # and sort characters by their names
-    class SortLayout
+    class SortLayout < Layout
       # @oaram weave [Weave]
       # @return [(Array<String>,Array<String>)]
       #   * Location names in order
@@ -61,6 +127,7 @@ module Lachisis
       end
 
       location_order, characters = @layout.layout(weave)
+      $stderr.puts "Crossing number: #{@layout.crossing_number(weave)}"
 
       # TODO: could use Nokogiri here
 

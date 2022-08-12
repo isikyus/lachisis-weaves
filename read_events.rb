@@ -72,10 +72,12 @@ while ARGV[0].start_with?('-')
       edge_offset = SVG_LOCATION_GAP * SVG_THREAD_SPACING
       last_location_end = 0
 
-      location_spacing = location_sizes.transform_values do |char_count|
+      location_spacing = {}
+      location_sizes.sort.each do |location, char_count|
         start_y = last_location_end + edge_offset
         last_location_end = start_y + char_count * SVG_THREAD_SPACING
-        start_y
+
+        location_spacing[location] = start_y
       end
 
       max_y = last_location_end + edge_offset

@@ -82,7 +82,7 @@ module Lachisis
       # Work out vertical order of characters in a frame, based on layout
       def char_order(locations, characters, frame)
         # TECHNICAL NOTE: this isn't a comparison sort;
-        # radix sort would work here since I know the exact place of each
+        # radix sort may work here since I know the exact place of each
         # location=event in the final array. But I'm not sure how to tell
         # Ruby to use this optimisation.
         events = frame.events.sort_by { |e| locations.index(e.location) }

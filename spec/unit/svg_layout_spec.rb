@@ -2,11 +2,11 @@ require 'lachisis/event'
 require 'lachisis/svg'
 require 'lachisis/weave'
 
-RSpec.describe Lachisis::SVG::Layout do
+RSpec.describe Lachisis::SVG::Crossings do
   let(:weave) { Lachisis::Weave.new }
-  subject(:layout) { Lachisis::SVG::Layout.new }
+  subject(:crossings) { Lachisis::SVG::Crossings}
 
-  describe '#count_crossings' do
+  describe '#count' do
     before do
       weave.add(0, 0, Lachisis::Event.new('A', %w[ one two ]))
       weave.add(0, 0, Lachisis::Event.new('B', %w[ three ]))
@@ -21,7 +21,7 @@ RSpec.describe Lachisis::SVG::Layout do
       let(:character_order) { %w[ one two three ] }
 
       specify 'counts 0 crossings' do
-        expect(layout.count_crossings(weave, location_order, character_order)).to eq 0
+        expect(crossings.count(weave, location_order, character_order)).to eq 0
       end
     end
 
@@ -30,7 +30,7 @@ RSpec.describe Lachisis::SVG::Layout do
       let(:character_order) { %w[ two one three ] }
 
       specify 'counts 1 crossing' do
-        expect(layout.count_crossings(weave, location_order, character_order)).to eq 1
+        expect(crossings.count(weave, location_order, character_order)).to eq 1
       end
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Lachisis::SVG::Layout do
       let(:character_order) { %w[ two one three ] }
 
       specify 'counts 2 crossings' do
-        expect(layout.count_crossings(weave, location_order, character_order)).to eq 2
+        expect(crossings.count(weave, location_order, character_order)).to eq 2
       end
     end
   end

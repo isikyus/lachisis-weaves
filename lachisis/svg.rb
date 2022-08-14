@@ -13,24 +13,9 @@ module Lachisis
     LABEL_OFFSET = THREAD_WIDTH
     FONT_SIZE = THREAD_SPACING
 
-    # Layout strategies, responsible for deciding what order to put locations
-    # and# characters in.
-    # Other layout is mostly forced by the structure of the diagram (frames in
-    # order, events at their time and location, and threads running through their
-    # events.)
-
-    class Layout
-      def layout(weave)
-        raise 'To be implemented by subclass'
-      end
-
-      def crossing_number(weave)
-        locations, characters = layout(weave)
-        count_crossings(weave, locations, characters)
-      end
-
-
-      def count_crossings(weave, locations, characters)
+    # Finds threads that cross over with a given layout
+    class Crossings
+      def self.count(weave, locations, characters)
         crossings = 0
         initial, *frames = weave.frames
 
@@ -45,7 +30,8 @@ module Lachisis
         crossings
       end
 
-      private
+      class << self
+        private
 
       # Work out vertical order of characters in a frame, based on layout
       def char_order(locations, characters, frame)
@@ -88,6 +74,24 @@ module Lachisis
 
         double_crossings / 2
       end
+      end
+    end
+
+    # Layout strategies, responsible for deciding what order to put locations
+    # and# characters in.
+    # Other layout is mostly forced by the structure of the diagram (frames in
+    # order, events at their time and location, and threads running through their
+    # events.)
+
+    class Layout
+      def layout(weave)
+        raise 'To be implemented by subclass'
+      end
+
+      def crossing_number(weave)
+        locations, characters = layout(weave)
+        Crossings.count(weave, locations, characters)
+      end
     end
 
     # Minimal algorithm that sort of works: sort by location name,
@@ -119,7 +123,7 @@ module Lachisis
         temperature = STARTING_TEMPERATURE
         best_locations = weave.locations
         best_characters = weave.characters
-        best_score = count_crossings(weave, best_locations, best_characters)
+        best_score = Crossings.count(weave, best_locations, best_characters)
 
         while(temperature > 0.001)
           improvement = 0
@@ -127,14 +131,14 @@ module Lachisis
           log("Temperature #{temperature}")
           samples = SAMPLES_PER_ITERATION.times.map do
             locs, chars = shuffle(temperature, best_locations, best_characters)
-            score = count_crossings(weave, locs, chars)
-            
+            score = Crossings.count(weave, locs, chars)
+
             log("- #{score}")
 
             {
               locs: locs,
               chars: chars,
-              score: count_crossings(weave, locs, chars)
+              score: score
             }
           end
 

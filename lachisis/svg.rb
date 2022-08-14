@@ -29,7 +29,6 @@ module Lachisis
         count_crossings(weave, locations, characters)
       end
 
-      private
 
       def count_crossings(weave, locations, characters)
         crossings = 0
@@ -45,6 +44,8 @@ module Lachisis
 
         crossings
       end
+
+      private
 
       # Work out vertical order of characters in a frame, based on layout
       def char_order(locations, characters, frame)

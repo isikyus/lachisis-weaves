@@ -69,8 +69,13 @@ module Lachisis
 
             totals
           end
-
       end
+
+      def to_s
+        "<#Crossings #{total} across #{by_character.length} characters and #{by_location.length} locations >"
+      end
+
+      alias inspect to_s
 
       private
 
@@ -191,7 +196,7 @@ module Lachisis
             best_characters = candidate[:chars]
           end
 
-          log("- improvement this round: #{improvement}\n")
+          log("- improvement this round: #{improvement} (current best #{best_score.total})\n")
 
           # Decreasing exponentially is good for this, right?
           temperature *= 0.5
@@ -254,6 +259,7 @@ module Lachisis
 
       location_order, characters = @layout.layout(weave)
       $stderr.puts "Crossing number: #{@layout.crossing_number(weave)}"
+      $stderr.puts "Location order: #{location_order.join(', ')}"
 
       # TODO: could use Nokogiri here
 

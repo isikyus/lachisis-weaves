@@ -150,8 +150,9 @@ module Lachisis
     end
 
     class SimulatedAnnealing < Layout
-      SAMPLES_PER_ITERATION = 10
-      STARTING_TEMPERATURE = 100.0
+      SAMPLES_PER_ITERATION = 100
+      STARTING_TEMPERATURE = 200.0
+      COOLING_RATE = 0.7
 
       def initialize
         # Chosen by fair dice roll ...
@@ -165,15 +166,17 @@ module Lachisis
         best_characters = weave.characters
         best_score = Crossings.count(weave, best_locations, best_characters)
 
-        while(temperature > 0.001)
+        log("Initial best score: #{best_score}")
+
+        while(temperature > 1)
           improvement = 0
 
           log("Temperature #{temperature}")
-          samples = SAMPLES_PER_ITERATION.times.map do
+          samples = SAMPLES_PER_ITERATION.times.map do |i|
             locs, chars = shuffle(temperature, best_locations, best_characters)
             score = Crossings.count(weave, locs, chars)
 
-            log("- #{score}")
+            log("#{i} - #{score}")
 
             {
               locs: locs,
@@ -183,6 +186,7 @@ module Lachisis
           end
 
           candidate = samples.min_by { |s| s[:score].total }
+          log("- best this round: #{candidate[:score]}")
 
           if candidate[:score].total < best_score.total
             improvement = best_score.total - candidate[:score].total
@@ -191,10 +195,10 @@ module Lachisis
             best_characters = candidate[:chars]
           end
 
-          log("- improvement this round: #{improvement} (current best #{best_score.total})\n")
+          log("- improvement this round: #{improvement} (current favoured option is #{best_score.total})\n")
 
           # Decreasing exponentially is good for this, right?
-          temperature *= 0.5
+          temperature *= COOLING_RATE
         end
 
         [best_locations, best_characters]
@@ -211,8 +215,8 @@ module Lachisis
 
       def shuffle_array(temperature, array)
         a = array.dup
-        probability = temperature / STARTING_TEMPERATURE
-        (array.length / 2).times do
+        temperature_ratio = temperature / STARTING_TEMPERATURE * 10
+        (array.length * temperature_ratio).floor.times do
           i1 = @random.rand(array.length)
           i2 = @random.rand(array.length)
           a[i1], a[i2] = a[i2], a[i1]

@@ -187,10 +187,10 @@ module Lachisis
             }
           end
 
-          candidate = samples.min_by(&:first)
+          candidate = samples.min_by { |s| s[:score].total }
 
-          if candidate[:score] > best_score
-            improvement = best_score - candidate[:score]
+          if candidate[:score].total < best_score.total
+            improvement = best_score.total - candidate[:score].total
             best_score = candidate[:score]
             best_locations = candidate[:locs]
             best_characters = candidate[:chars]
@@ -275,7 +275,7 @@ module Lachisis
       last_location_end = 0
 
       location_spacing = {}
-      location_sizes.sort.each do |location, char_count|
+      location_sizes.sort_by { |l| location_order.index(l) }.each do |location, char_count|
         start_y = last_location_end + edge_offset
         last_location_end = start_y + char_count * THREAD_SPACING
 

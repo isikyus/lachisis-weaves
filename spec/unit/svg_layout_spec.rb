@@ -4,7 +4,7 @@ require 'lachisis/weave'
 
 RSpec.describe Lachisis::SVG::Crossings do
   let(:weave) { Lachisis::Weave.new }
-  subject(:crossings) { Lachisis::SVG::Crossings}
+  subject(:crossings) { Lachisis::SVG::Crossings.count(weave, location_order, character_order) }
 
   describe '#count' do
     before do
@@ -21,7 +21,15 @@ RSpec.describe Lachisis::SVG::Crossings do
       let(:character_order) { %w[ one two three ] }
 
       specify 'counts 0 crossings' do
-        expect(crossings.count(weave, location_order, character_order)).to eq 0
+        expect(crossings.total).to eq 0
+      end
+
+      specify 'reports none per character' do
+        expect(crossings.by_character).to eq({})
+      end
+
+      specify 'reports none per location' do
+        expect(crossings.by_location).to eq({})
       end
     end
 
@@ -30,7 +38,15 @@ RSpec.describe Lachisis::SVG::Crossings do
       let(:character_order) { %w[ two one three ] }
 
       specify 'counts 1 crossing' do
-        expect(crossings.count(weave, location_order, character_order)).to eq 1
+        expect(crossings.total).to eq 1
+      end
+
+      specify 'reports which characters are involved' do
+        expect(crossings.by_character).to eq(one: 1, two: 1)
+      end
+
+      specify 'reports which locations are involved' do
+        expect(crossings.by_location).to eq(A: 3, C: 1)
       end
     end
 
@@ -39,7 +55,15 @@ RSpec.describe Lachisis::SVG::Crossings do
       let(:character_order) { %w[ two one three ] }
 
       specify 'counts 2 crossings' do
-        expect(crossings.count(weave, location_order, character_order)).to eq 2
+        expect(crossings.total).to eq 2
+      end
+
+      specify 'reports which characters are involved' do
+        expect(crossings.by_character).to eq(one: 1, two: 2, three: 1)
+      end
+
+      specify 'reports which locations are involved' do
+        expect(crossings.by_location).to eq(A: 4, B: 2, C: 2)
       end
     end
   end

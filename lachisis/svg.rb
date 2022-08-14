@@ -15,23 +15,60 @@ module Lachisis
 
     # Finds threads that cross over with a given layout
     class Crossings
-      def self.count(weave, locations, characters)
-        crossings = 0
-        initial, *frames = weave.frames
+      class Crossing < Struct.new(:character, :old_location, :new_location)
+      end
 
-        last_order = char_order(locations, characters, initial)
+      def self.count(weave, locations, characters)
+        new(weave, locations, characters)
+      end
+
+      def initialize(weave, locations, characters)
+        @crossings = []
+
+        # TODO: better not to do this calculation in #initialize?
+        last_frame, *frames = weave.frames
+
+        last_order = char_order(locations, characters, last_frame)
 
         frames.each do |frame|
           new_order = char_order(locations, characters, frame)
-          crossings += crossings(last_order, new_order)
+          crossed = crossing_characters(last_order, new_order)
+
+          @crossings += crossed.map do |character|
+            old_event = last_frame.events.detect { |e| e.characters.include?(character) }
+            new_event = frame.events.detect { |e| e.characters.include?(character) }
+
+            Crossing.new(character, old_event.location, new_event.location)
+          end
+
+          last_frame = frame
           last_order = new_order
         end
-
-        crossings
       end
 
-      class << self
-        private
+      def total
+        # Each crossing involves two lines. Correct for that.
+        @crossings.length / 2
+      end
+
+      def by_character
+        @crossings
+          .group_by(&:character)
+          .transform_keys(&:to_sym)
+          .transform_values(&:length)
+      end
+
+      def by_location
+        totals = Hash.new { |h, k| h[k] = 0 }
+        @crossings.each do |crossing|
+          totals[crossing.old_location.to_sym] += 1
+          totals[crossing.new_location.to_sym] += 1
+        end
+
+        totals
+      end
+
+      private
 
       # Work out vertical order of characters in a frame, based on layout
       def char_order(locations, characters, frame)
@@ -46,14 +83,16 @@ module Lachisis
         end
       end
 
-      # Calculate the number of lines that cross if you link each element
+      # Find the threads that cross if you link each element
       # in the input array to the matching one in the output.
-      def crossings(from, to)
+      #
+      # @return [Array<Crossing>]
+      def crossing_characters(from, to)
         # Only care about things that are actually in both sides
         can_cross = from & to
 
         # Count number of crossings for each character
-        individual_counts = can_cross.map do |char|
+        crossing_chars = can_cross.flat_map do |char|
           was = from.index(char)
           was_below = from[0..was] # Graphics! Y-axis increases going down
           was_above = from[(was+1)..-1]
@@ -62,18 +101,15 @@ module Lachisis
           now_below = to[0..was]
           now_above = to[(was+1)..-1]
 
-          crossed = (was_below & now_above) + (was_above & now_below)
-          #$stderr.puts("#{crossed.length} crossings for #{char} (was #{was}, now #{now})")
-          crossed.length
+          (was_below & now_above) + (was_above & now_below)
         end
 
-        # The above double-counts because each crossing involves
-        # two lines. Correct for that.
-        double_crossings = individual_counts.sum
-        raise "Double crossings should be even but #{from.inspect} and #{to.inspect} seem to cross #{double_crossings} times" unless double_crossings.even?
+        unless crossing_chars.length.even?
+          raise "Double crossings should be even but #{from.inspect} and " \
+                "#{to.inspect} seem to cross #{crossing_chars.length} times"
+        end
 
-        double_crossings / 2
-      end
+        crossing_chars
       end
     end
 

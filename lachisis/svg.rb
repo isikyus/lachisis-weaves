@@ -132,11 +132,6 @@ module Lachisis
       def layout(weave)
         raise 'To be implemented by subclass'
       end
-
-      def crossing_number(weave)
-        locations, characters = layout(weave)
-        Crossings.count(weave, locations, characters)
-      end
     end
 
     # Minimal algorithm that sort of works: sort by location name,
@@ -258,7 +253,7 @@ module Lachisis
       end
 
       location_order, characters = @layout.layout(weave)
-      $stderr.puts "Crossing number: #{@layout.crossing_number(weave)}"
+      $stderr.puts "Crossing number: #{Crossings.count(weave, location_order, characters).total}"
       $stderr.puts "Location order: #{location_order.join(', ')}"
 
       # TODO: could use Nokogiri here

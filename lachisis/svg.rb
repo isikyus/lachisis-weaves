@@ -52,20 +52,24 @@ module Lachisis
       end
 
       def by_character
-        @crossings
+        @by_character ||= @crossings
           .group_by(&:character)
           .transform_keys(&:to_sym)
           .transform_values(&:length)
       end
 
       def by_location
-        totals = Hash.new { |h, k| h[k] = 0 }
-        @crossings.each do |crossing|
-          totals[crossing.old_location.to_sym] += 1
-          totals[crossing.new_location.to_sym] += 1
-        end
+        @by_location ||=
+          begin
+            totals = Hash.new { |h, k| h[k] = 0 }
+            @crossings.each do |crossing|
+              totals[crossing.old_location.to_sym] += 1
+              totals[crossing.new_location.to_sym] += 1
+            end
 
-        totals
+            totals
+          end
+
       end
 
       private

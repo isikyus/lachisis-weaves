@@ -173,7 +173,7 @@ module Lachisis
 
           log("Temperature #{temperature}")
           samples = SAMPLES_PER_ITERATION.times.map do |i|
-            locs, chars = shuffle(temperature, best_locations, best_characters)
+            locs, chars = shuffle(temperature, best_locations, best_characters, best_score)
             score = Crossings.count(weave, locs, chars)
 
             log("#{i} - #{score}")
@@ -206,23 +206,49 @@ module Lachisis
 
       private
 
-      def shuffle(temperature, locations, characters)
+      def shuffle(temperature, locations, characters, crossings)
         [
-          shuffle_array(temperature, locations),
-          shuffle_array(temperature, characters)
+          shuffle_array(temperature, locations, crossings.by_location),
+          shuffle_array(temperature, characters, crossings.by_character)
         ]
       end
 
-      def shuffle_array(temperature, array)
+      def shuffle_array(temperature, array, weights)
         a = array.dup
         temperature_ratio = temperature / STARTING_TEMPERATURE * 10
+
         (array.length * temperature_ratio).floor.times do
-          i1 = @random.rand(array.length)
-          i2 = @random.rand(array.length)
+          i1 = sample_by_crossings(array, weights)
+          i2 = sample_by_crossings(array, weights)
           a[i1], a[i2] = a[i2], a[i1]
         end
 
         a
+      end
+
+      # Take a weighted sample from the entries in an array.
+      #
+      # @param array [Array<Object>]
+      # @param weights [Hash<Object,Integer>] Weights for each
+      #         array element. Weights will all be incremented
+      #         by 1 so we can treat elements not in the array
+      #         as weight 1.
+      def sample_by_crossings(array, weights)
+        total_weight = array.length + weights.values.sum
+        weighted_index = @random.rand(total_weight)
+
+        weight_so_far = 0
+        sample = array.each_with_index.detect do |elem, index|
+          weight_so_far += 1 + (weights[elem.to_sym] || 0)
+          weight_so_far >= weighted_index
+        end
+
+        unless sample
+          raise "No element found for weight #{weighted_index} / #{total_weight}" \
+                " (max weight reached was #{weight_so_far})"
+        end
+
+        sample.last # Index, not element
       end
 
       def log msg

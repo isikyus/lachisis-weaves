@@ -15,7 +15,24 @@ module Lachisis
 
     # Finds threads that cross over with a given layout
     class Crossings
-      class Crossing < Struct.new(:character, :old_location, :new_location)
+      class Crossing
+        def initialize(characters, old_locations, new_locations)
+          @characters = characters.to_set
+          raise "Expected two characters but got #{@characters.inspect}" unless @characters.length == 2
+
+          @old_locations = old_locations.to_set
+          @new_locations = new_locations.to_set
+        end
+
+        attr_reader :characters, :old_locations, :new_locations
+
+        def all_locations
+          old_locations | new_locations
+        end
+
+        def both_characters
+          characters
+        end
       end
 
       def self.count(weave, locations, characters)
@@ -34,11 +51,15 @@ module Lachisis
           new_order = char_order(locations, characters, frame)
           crossed = crossing_characters(last_order, new_order)
 
-          @crossings += crossed.map do |character|
-            old_event = last_frame.events.detect { |e| e.characters.include?(character) }
-            new_event = frame.events.detect { |e| e.characters.include?(character) }
+          @crossings += crossed.map do |char1, char2|
+            old_events = last_frame.events.select { |e| (e.characters & [char1, char2]).any? }
+            new_events = frame.events.select { |e| (e.characters & [char1, char2]).any? }
 
-            Crossing.new(character, old_event.location, new_event.location)
+            Crossing.new(
+              [char1, char2].map(&:to_sym),
+              old_events.map(&:location).map(&:to_sym),
+              new_events.map(&:location).map(&:to_sym)
+            )
           end
 
           last_frame = frame
@@ -53,22 +74,14 @@ module Lachisis
 
       def by_character
         @by_character ||= @crossings
-          .group_by(&:character)
-          .transform_keys(&:to_sym)
+          .group_by(&:both_characters)
           .transform_values(&:length)
       end
 
       def by_location
-        @by_location ||=
-          begin
-            totals = Hash.new { |h, k| h[k] = 0 }
-            @crossings.each do |crossing|
-              totals[crossing.old_location.to_sym] += 1
-              totals[crossing.new_location.to_sym] += 1
-            end
-
-            totals
-          end
+        @by_location ||= @crossings
+          .group_by(&:all_locations)
+          .transform_values(&:length)
       end
 
       def to_s
@@ -103,14 +116,15 @@ module Lachisis
         # Count number of crossings for each character
         crossing_chars = can_cross.flat_map do |char|
           was = from.index(char)
-          was_below = from[0..was] # Graphics! Y-axis increases going down
+          was_below = from[0...was] # Graphics! Y-axis increases going down
           was_above = from[(was+1)..-1]
 
           now = to.index(char)
-          now_below = to[0..was]
-          now_above = to[(was+1)..-1]
+          now_below = to[0...now]
+          now_above = to[(now+1)..-1]
 
-          (was_below & now_above) + (was_above & now_below)
+          others = (was_below & now_above) + (was_above & now_below)
+          others.map { |o| [char, o] }
         end
 
         unless crossing_chars.length.even?
@@ -213,13 +227,25 @@ module Lachisis
         ]
       end
 
-      def shuffle_array(temperature, array, weights)
-        a = array.dup
+      # @param temperature [Float]
+      # @param array [Array<Symbol,String>]
+      # @param weighted_sets [Array<Set<Symbol>>] Sets of 2+ elements
+      #       with weights indicating how good of a swap a pair from
+      #       that set would be.
+      def shuffle_array(temperature, array, weighted_sets)
         temperature_ratio = temperature / STARTING_TEMPERATURE * 10
+        symbolised_array = array.map(&:to_sym)
+        all_pairs = symbolised_array
+          .permutation(2)
+          .map(&:to_set)
+          .to_a
+        all_sets = all_pairs | weighted_sets.keys
 
+        a = array.dup
         (array.length * temperature_ratio).floor.times do
-          i1 = sample_by_crossings(array, weights)
-          i2 = sample_by_crossings(array, weights)
+          set = sample_by_weights(all_sets, weighted_sets)
+          pair = set.to_a.sample(2, random: @random)
+          i1, i2 = *pair.map { |e| symbolised_array.index(e) }
           a[i1], a[i2] = a[i2], a[i1]
         end
 
@@ -233,13 +259,14 @@ module Lachisis
       #         array element. Weights will all be incremented
       #         by 1 so we can treat elements not in the array
       #         as weight 1.
-      def sample_by_crossings(array, weights)
+      # @return [Object] An element sampled from the array
+      def sample_by_weights(array, weights)
         total_weight = array.length + weights.values.sum
         weighted_index = @random.rand(total_weight)
 
         weight_so_far = 0
-        sample = array.each_with_index.detect do |elem, index|
-          weight_so_far += 1 + (weights[elem.to_sym] || 0)
+        sample = array.detect do |elem|
+          weight_so_far += 1 + (weights[elem] || 0)
           weight_so_far >= weighted_index
         end
 
@@ -248,7 +275,7 @@ module Lachisis
                 " (max weight reached was #{weight_so_far})"
         end
 
-        sample.last # Index, not element
+        sample
       end
 
       def log msg

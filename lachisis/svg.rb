@@ -327,7 +327,7 @@ module Lachisis
       last_location_end = 0
 
       location_spacing = {}
-      location_sizes.sort_by { |l| location_order.index(l) }.each do |location, char_count|
+      location_sizes.sort_by { |l, _sz| location_order.index(l.to_sym) }.each do |location, char_count|
         start_y = last_location_end + edge_offset
         last_location_end = start_y + char_count * THREAD_SPACING
 

@@ -3,6 +3,7 @@ GEM
   specs:
     ast (2.4.2)
     diff-lcs (1.5.0)
+    docile (1.4.0)
     json (2.6.2)
     nokogiri (1.13.6-x86_64-linux)
       racc (~> 1.4)
@@ -43,6 +44,12 @@ GEM
     rubocop-rspec (2.12.1)
       rubocop (~> 1.31)
     ruby-progressbar (1.11.0)
+    simplecov (0.21.2)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-html (0.12.3)
+    simplecov_json_formatter (0.1.4)
     unicode-display_width (2.2.0)
 
 PLATFORMS
@@ -54,6 +61,7 @@ DEPENDENCIES
   rspec_junit_formatter
   rubocop (~> 1.31)
   rubocop-rspec
+  simplecov
 
 BUNDLED WITH
    2.2.3

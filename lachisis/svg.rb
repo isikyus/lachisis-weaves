@@ -289,6 +289,13 @@ module Lachisis
       @layout = layout
     end
 
+    # Make callable as a proc
+    def to_proc
+      Proc.new do |weave|
+        self.call(weave)
+      end
+    end
+
     def call(weave)
       threads = {}
       location_sizes = {}

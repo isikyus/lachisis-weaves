@@ -3,8 +3,8 @@
 version: 2.1
 
 orbs:
+  code-climate: travelaudience/code-climate@0.1.5
   ruby: circleci/ruby@1.8.0
-
 
 jobs:
   rspec:
@@ -14,9 +14,14 @@ jobs:
       - checkout
       - ruby/install:
           version: "$(cat .ruby-version)"
+      - code-climate/install
       - ruby/install-deps:
           key: gems-v1
       - ruby/rspec-test
+      - code-climate/format_coverage:
+          coverage_file: coverage/index.html
+          input_type: simplecov
+      - code-climate/upload_coverage
 
 workflows:
   test:

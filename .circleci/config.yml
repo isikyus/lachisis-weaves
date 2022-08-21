@@ -13,7 +13,7 @@ jobs:
     steps:
       - checkout
       - ruby/install:
-          version: "`$(cat .ruby-version)`"
+          version: "$(cat .ruby-version)"
       - ruby/install-deps:
           key: gems-v1
       - ruby/rspec-test

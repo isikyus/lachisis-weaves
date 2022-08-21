@@ -18,6 +18,8 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.11.0)
     rspec-support (3.11.0)
+    rspec_junit_formatter (0.5.1)
+      rspec-core (>= 2, < 4, != 2.12.0)
 
 PLATFORMS
   x86_64-linux
@@ -25,6 +27,7 @@ PLATFORMS
 DEPENDENCIES
   nokogiri
   rspec
+  rspec_junit_formatter
 
 BUNDLED WITH
    2.2.3

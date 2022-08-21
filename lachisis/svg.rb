@@ -311,7 +311,7 @@ module Lachisis
 
       location_order, characters = @layout.layout(weave)
       $stderr.puts "Crossing number: #{Crossings.count(weave, location_order, characters).total}"
-      $stderr.puts "Location order: #{location_order.join(', ')}"
+      $stderr.puts "Location order: #{location_order.inspect}"
 
       # TODO: could use Nokogiri here
 
@@ -327,12 +327,14 @@ module Lachisis
       last_location_end = 0
 
       location_spacing = {}
-      location_sizes.sort_by { |l, _sz| location_order.index(l.to_sym) }.each do |location, char_count|
+      location_sizes.sort_by { |l, _sz| location_order.index(l) }.each do |location, char_count|
         start_y = last_location_end + edge_offset
         last_location_end = start_y + char_count * THREAD_SPACING
 
         location_spacing[location] = start_y
       end
+
+      $stderr.puts(location_spacing.map { |location, space| "%5d (%2d) %s" % [space, location_order.index(location) || -1, location.inspect] })
 
       max_y = last_location_end + edge_offset
       xml_data = [

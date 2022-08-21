@@ -10,6 +10,6 @@ group :development, :test do
   gem 'rspec'
   gem 'rspec_junit_formatter'
 
-  gem 'rubocop'
+  gem 'rubocop', '~> 1.31'
   gem 'rubocop-rspec'
 end

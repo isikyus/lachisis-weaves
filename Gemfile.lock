@@ -52,7 +52,7 @@ DEPENDENCIES
   nokogiri
   rspec
   rspec_junit_formatter
-  rubocop
+  rubocop (~> 1.31)
   rubocop-rspec
 
 BUNDLED WITH

@@ -19,7 +19,7 @@ jobs:
           key: gems-v1
       - ruby/rspec-test
       - code-climate/format_coverage:
-          coverage_file: coverage/index.html
+          coverage_file: coverage/coverage.json
           input_type: simplecov
       - code-climate/upload_coverage
 

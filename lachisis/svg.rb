@@ -187,7 +187,7 @@ module Lachisis
 
           log("Temperature #{temperature}")
           samples = SAMPLES_PER_ITERATION.times.map do |i|
-            locs, chars = shuffle(temperature, best_locations, best_characters, best_score)
+            locs, chars = shuffle(best_locations, best_characters, best_score)
             score = Crossings.count(weave, locs, chars)
 
             log("#{i} - #{score}")
@@ -220,10 +220,10 @@ module Lachisis
 
       private
 
-      def shuffle(temperature, locations, characters, crossings)
+      def shuffle(locations, characters, crossings)
         [
-          shuffle_array(temperature, locations, crossings.by_location),
-          shuffle_array(temperature, characters, crossings.by_character)
+          shuffle_array(locations, crossings.by_location),
+          shuffle_array(characters, crossings.by_character)
         ]
       end
 
@@ -232,8 +232,7 @@ module Lachisis
       # @param weighted_sets [Array<Set<Symbol>>] Sets of 2+ elements
       #       with weights indicating how good of a swap a pair from
       #       that set would be.
-      def shuffle_array(temperature, array, weighted_sets)
-        temperature_ratio = temperature / STARTING_TEMPERATURE * 10
+      def shuffle_array(array, weighted_sets)
         symbolised_array = array.map(&:to_sym)
         all_pairs = symbolised_array
           .permutation(2)
@@ -242,13 +241,11 @@ module Lachisis
         all_sets = all_pairs | weighted_sets.keys
 
         a = array.dup
-        (array.length * temperature_ratio).floor.times do
-          set = sample_by_weights(all_sets, weighted_sets)
-          pair = set.to_a.sample(2, random: @random)
-          i1, i2 = *pair.map { |e| symbolised_array.index(e) }
-          a[i1], a[i2] = a[i2], a[i1]
-        end
 
+        set = sample_by_weights(all_sets, weighted_sets)
+        pair = set.to_a.sample(2, random: @random)
+        i1, i2 = *pair.map { |e| symbolised_array.index(e) }
+        a[i1], a[i2] = a[i2], a[i1]
         a
       end
 

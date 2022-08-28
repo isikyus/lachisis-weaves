@@ -40,6 +40,10 @@ module Lachisis
       end
 
       def initialize(weave, locations, characters)
+        @weave = weave
+        @locations = locations
+        @characters = characters
+
         @crossings = []
 
         # TODO: better not to do this calculation in #initialize?
@@ -65,6 +69,31 @@ module Lachisis
           last_frame = frame
           last_order = new_order
         end
+      end
+
+      # Update crossing counts for this location order, but with two locations
+      # and two characters both swapped.
+      # (either swap can be nil if you're only swapping one kind of thing).
+      #
+      # @param location_swap [Array<String>, nil] The two locations to swap
+      # @param character_swap [Array<String>, nil] The two characters to swap
+      def swap(location_swap, character_swap)
+        new_locs = @locations.dup
+        new_chars = @characters.dup
+
+        if location_swap
+          raise ArgumentError, 'Can only swap 2 things' unless location_swap.length == 2
+          i1, i2 = *location_swap.map { |loc| new_locs.index(loc) }
+          new_locs[i1], new_locs[i2] = new_locs[i2], new_locs[i1]
+        end
+
+        if character_swap
+          raise ArgumentError, 'Can only swap 2 things' unless character_swap.length == 2
+          i1, i2 = *character_swap.map { |loc| new_chars.index(loc) }
+          new_chars[i1], new_chars[i2] = new_chars[i2], new_chars[i1]
+        end
+
+        Crossings.new(@weave, new_locs, new_chars)
       end
 
       def total

@@ -78,22 +78,33 @@ module Lachisis
       # @param location_swap [Array<String>, nil] The two locations to swap
       # @param character_swap [Array<String>, nil] The two characters to swap
       def swap(location_swap, character_swap)
-        new_locs = @locations.dup
-        new_chars = @characters.dup
-
-        if location_swap
-          raise ArgumentError, 'Can only swap 2 things' unless location_swap.length == 2
-          i1, i2 = *location_swap.map { |loc| new_locs.index(loc) }
-          new_locs[i1], new_locs[i2] = new_locs[i2], new_locs[i1]
-        end
-
-        if character_swap
-          raise ArgumentError, 'Can only swap 2 things' unless character_swap.length == 2
-          i1, i2 = *character_swap.map { |loc| new_chars.index(loc) }
-          new_chars[i1], new_chars[i2] = new_chars[i2], new_chars[i1]
-        end
+        new_locs = apply_swap(@locations.dup, location_swap)
+        new_chars = apply_swap(@characters.dup, character_swap)
 
         Crossings.new(@weave, new_locs, new_chars)
+      end
+
+      # Update a list by swapping two given items
+      # @param list [Array]
+      # @param swap [Array, nil] two entries to swap
+      #             if nil will not swap anything.
+      #
+      # @return [Array] with the two elements swapped
+      def apply_swap(list, swap)
+        if swap
+          result = list.dup
+
+          raise ArgumentError, 'Can only swap 2 things' unless swap.length == 2
+          i1, i2 = *swap.map { |loc| result.index(loc) }
+
+          raise ArgumentError, 'entries must exist in array' unless i1 && i2
+
+          result[i1], result[i2] = result[i2], result[i1]
+
+          result
+        else
+          list
+        end
       end
 
       def total
@@ -216,8 +227,11 @@ module Lachisis
 
           log("Temperature #{temperature}")
           samples = SAMPLES_PER_ITERATION.times.map do |i|
-            locs, chars = shuffle(best_locations, best_characters, best_score)
-            score = Crossings.count(weave, locs, chars)
+            swaps = find_swaps(best_locations, best_characters, best_score)
+              .map { |pair| pair.map(&:to_s) }
+            locs = best_score.apply_swap(best_locations, swaps[0])
+            chars = best_score.apply_swap(best_characters, swaps[1])
+            score = best_score.swap(*swaps)
 
             log("#{i} - #{score}")
 
@@ -249,10 +263,10 @@ module Lachisis
 
       private
 
-      def shuffle(locations, characters, crossings)
+      def find_swaps(locations, characters, crossings)
         [
-          shuffle_array(locations, crossings.by_location),
-          shuffle_array(characters, crossings.by_character)
+          find_swap(locations, crossings.by_location),
+          find_swap(characters, crossings.by_character)
         ]
       end
 
@@ -261,7 +275,9 @@ module Lachisis
       # @param weighted_sets [Array<Set<Symbol>>] Sets of 2+ elements
       #       with weights indicating how good of a swap a pair from
       #       that set would be.
-      def shuffle_array(array, weighted_sets)
+      #
+      # @return [Array<Symbol,String>] Two elements to be swapped
+      def find_swap(array, weighted_sets)
         symbolised_array = array.map(&:to_sym)
         all_pairs = symbolised_array
           .permutation(2)
@@ -272,10 +288,7 @@ module Lachisis
         a = array.dup
 
         set = sample_by_weights(all_sets, weighted_sets)
-        pair = set.to_a.sample(2, random: @random)
-        i1, i2 = *pair.map { |e| symbolised_array.index(e) }
-        a[i1], a[i2] = a[i2], a[i1]
-        a
+        set.to_a.sample(2, random: @random)
       end
 
       # Take a weighted sample from the entries in an array.

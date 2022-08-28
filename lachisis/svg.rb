@@ -37,22 +37,26 @@ module Lachisis
 
       def self.count(weave, locations, characters)
         new(weave, locations, characters)
+          .calculate_crossings!
       end
 
       def initialize(weave, locations, characters)
         @weave = weave
         @locations = locations
         @characters = characters
+      end
 
+      def calculate_crossings!
+        raise "Should only calculate crossings once, at initialisation" if @crossings
         @crossings = []
 
         # TODO: better not to do this calculation in #initialize?
-        last_frame, *frames = weave.frames
+        last_frame, *frames = @weave.frames
 
-        last_order = char_order(locations, characters, last_frame)
+        last_order = char_order(@locations, @characters, last_frame)
 
         frames.each do |frame|
-          new_order = char_order(locations, characters, frame)
+          new_order = char_order(@locations, @characters, frame)
           crossed = crossing_characters(last_order, new_order)
 
           @crossings += crossed.map do |char1, char2|
@@ -69,6 +73,8 @@ module Lachisis
           last_frame = frame
           last_order = new_order
         end
+
+        self
       end
 
       # Update crossing counts for this location order, but with two locations
@@ -81,7 +87,7 @@ module Lachisis
         new_locs = apply_swap(@locations.dup, location_swap)
         new_chars = apply_swap(@characters.dup, character_swap)
 
-        Crossings.new(@weave, new_locs, new_chars)
+        Crossings.new(@weave, new_locs, new_chars).calculate_crossings!
       end
 
       # Update a list by swapping two given items

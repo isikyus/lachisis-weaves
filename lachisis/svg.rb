@@ -17,11 +17,11 @@ module Lachisis
     class Crossings
       class Crossing
         def initialize(characters, old_locations, new_locations)
-          @characters = characters.to_set
+          @characters = characters.map(&:to_sym).to_set
           raise "Expected two characters but got #{@characters.inspect}" unless @characters.length == 2
 
-          @old_locations = old_locations.to_set
-          @new_locations = new_locations.to_set
+          @old_locations = old_locations.map(&:to_sym).to_set
+          @new_locations = new_locations.map(&:to_sym).to_set
         end
 
         attr_reader :characters, :old_locations, :new_locations
@@ -32,6 +32,16 @@ module Lachisis
 
         def both_characters
           characters
+        end
+
+        def eql?(other)
+          characters == other.characters &&
+            old_locations == other.old_locations &&
+            new_locations == other.new_locations
+        end
+
+        def hash
+          characters.hash + old_locations.hash + new_locations.hash
         end
       end
 
@@ -84,10 +94,40 @@ module Lachisis
       # @param location_swap [Array<String>, nil] The two locations to swap
       # @param character_swap [Array<String>, nil] The two characters to swap
       def swap(location_swap, character_swap)
-        new_locs = apply_swap(@locations.dup, location_swap)
-        new_chars = apply_swap(@characters.dup, character_swap)
+        new_locs = @locations
+        new_chars = @characters
+        new_crossings = @crossings.dup
 
-        Crossings.new(@weave, new_locs, new_chars).calculate_crossings!
+        if location_swap
+          new_locs = @locations.dup
+          affected_locations = @locations.each_with_index.select do |loc, index|
+            # Use the flip-flop operator to pick the two affected locations
+            # and any between them. Note we need an `if` to do this as flip-flop
+            # only works in that context.
+            if location_swap.include?(loc) .. location_swap.include?(loc)
+              true
+            end
+          end
+
+          unless affected_locations.values_at(0, -1).map(&:first).to_set == location_swap.to_set
+            raise "Locations at either end of list should be the values we're swapping"
+          end
+
+          # Calculated updated crossings as a series of adjacent swaps.
+          # First, swap from start to finish to move the first element to
+          # the end; then swap from second-last to beginning to move the
+          # old last element back to the start.
+          (affected_locations + affected_locations.reverse[1..]).each_cons(2) do |first, last|
+            new_locs[first[1]], new_locs[last[1]] = new_locs[last[1]], new_locs[first[1]]
+            new_crossings = update_crossings_with_swap(new_crossings, new_locs, new_chars, first[0], first[1], last[0], last[1])
+          end
+        end
+
+        # TODO: handle characters too
+
+        result = Crossings.new(@weave, new_locs, new_chars)
+        result.crossings = new_crossings
+        result
       end
 
       # Update a list by swapping two given items
@@ -136,6 +176,14 @@ module Lachisis
 
       alias inspect to_s
 
+      protected
+
+      def crossings=new_crossings
+        raise "Should only set crossings once, at initialisation" if @crossings
+        @crossings = new_crossings
+      end
+
+
       private
 
       # Work out vertical order of characters in a frame, based on layout
@@ -179,6 +227,150 @@ module Lachisis
         end
 
         crossing_chars
+      end
+
+      # Update the list of crossings given that two adjacent locations are
+      # swapped.
+      #
+      # @param crossings [Array<Crossing>]
+      # @param locs [Array<String>] Locations
+      # @param chars [Array<String>] Characters
+      # @param first_location [String]
+      # @param first_location_index [Integer]
+      # @param second_location [String]
+      # @param second_location_index [Integer]
+      def update_crossings_with_swap(crossings, locs, chars, first_location, first_location_index, second_location, second_location_index)
+        # Ensure the first location is earlier in order (makes some comparisons later simpler)
+        if first_location_index > second_location_index
+          first_location, second_location = second_location, first_location
+          first_location_index, second_location_index = second_location_index, first_location_index
+        end
+
+        # Remove crossings that no longer apply
+        # These are only crossings where the two starting locations,
+        # or the two ending locations (but not both) are the two being swapped.
+        #
+        # * If the swap doesn't involve both locations, it doesn't affect the relative
+        #   position of the ends of the crossing lines, so there's no effect.
+        # * If it does involve both locations, but on opposite sides, then either
+        #   (a) one character goes from the first to the second swapped location,
+        #   and the other starts above & ends below both, or (b) one character
+        #   comes in from above to one of the swapped loations, and the other
+        #   leaves from a swapped location to above (or below, but that case
+        #   is symmetrical); in that case they will cross regardless of the swap.
+        # * If it involves one location twice (one character stays in that
+        #   location during the crossing), then the only way a swap makes a
+        #   difference is if the other character arrives at or leaves from
+        #   the other swapped location; otherwise they still cross from above
+        #   to below (or vice versa)
+        # * If it involves both locations twice, then one character goes from
+        #   the first location to the second and the other goes the other way
+        #   (they must change locations as we know they cross). A swap makes
+        #   no difference here since it would swap both ends of the crossing
+        #   and they'd still cross.
+        swapped_locations = Set.new([first_location, second_location].map(&:to_sym))
+        remaining_crossings = crossings.reject do |cross|
+          (cross.old_locations == swapped_locations) ^ (cross.new_locations == swapped_locations)
+        end
+
+        # Add crossings created by the swap.
+        # I haven't done a full proof, but I think this case is symmetrical to the above,
+        # so only pairs of characters who (a) start or (b) end in the swapped locations,
+        # but not both, can be affected by the swap.
+        #
+        # A full analysis shows that a swap replacing locations (A,B) with (B,A)
+        # can only create crossings for characters x (leaving from A) and y
+        # (leaving from B) if x's destination is above y's destination (either as
+        # a location or in character order within a location). The case for characters
+        # arriving at B or A from elsewhere is symmetric.
+        #
+        # For x and y both leaving from A (or B, or both arriving - symmetry!), they
+        # can only now cross if x is above y, x goes to A, and y goes to B.
+        new_crossings = @weave.frames.each_cons(2).flat_map do |frame1, frame2|
+          leaving_first = []
+          leaving_second = []
+          leaving_all = []
+          frame1.events.sort_by { |e| locs.index(e.location) }.each do |event|
+            event.characters.sort_by { |c| chars.index(c) }.each do |character|
+              leaving_all << [character, event]
+
+              case event.location
+              when first_location
+                leaving_first << [character, event]
+              when second_location
+                leaving_second << [character, event]
+              end
+            end
+          end
+
+          arriving_first = []
+          arriving_second = []
+          arriving_all = []
+          frame2.events.sort_by { |e| locs.index(e.location) }.each do |event|
+            event.characters.sort_by { |c| chars.index(c) }.each do |character|
+              arriving_all << [character, event]
+
+              case event.location
+              when first_location
+                arriving_first << [character, event]
+              when second_location
+                arriving_second << [character, event]
+              end
+            end
+          end
+
+          # Characters pairs leaving from (A, B) who now cross
+          new_leaving = []
+          leaving_pair = leaving_first + leaving_second
+          leaving_pair.each_with_index do |departure, initial_index1|
+            char1, event1 = *departure
+            pp [char1, event1, initial_index1]
+            _char, destination1, index1 = *arriving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
+            leaving_pair[initial_index1..].each do |char2, event2|
+              next if event1 == event2 # Not actually a swap in this case
+              _char, destination2, index2 = *arriving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
+
+              if index1 < index2 # Character leaving the previously-higher location arrives at a higher destination
+                crossing = Crossing.new(
+                  [char1, char2],
+                  [event1.location, event2.location],
+                  [destination1.location, destination2.location]
+                )
+                new_leaving << crossing
+              end
+            end
+          end
+
+          # Characters pairs arriving from (A, B) who now cross
+          new_arriving = []
+          arriving_pair = arriving_first + arriving_second
+          arriving_pair.each_with_index do |arrival, initial_index1|
+            char1, event1 = *arrival
+            _char, destination1, index1 = *arriving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
+            arriving_pair[initial_index1..].each do |char2, event2|
+              next if event1 == event2 # Not actually a swap in this case
+              _char, destination2, index2 = *arriving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
+
+              if index1 < index2 # Character arriving at the previously-higher location left from a higher destination
+                crossing = Crossing.new(
+                  [char1, char2],
+                  [event1.location, event2.location],
+                  [destination1.location, destination2.location]
+                )
+                new_arriving << crossing
+              end
+            end
+          end
+
+          # Crossings in both arrays have both their start _and_ endpoints swapped,
+          # which cancels out, so remove them.
+          all_new = (new_leaving + new_arriving) - (new_leaving & new_arriving)
+
+          # Double array elements to keep to the existing double-counting API
+          all_new * 2
+        end
+
+        remaining_crossings + new_crossings
       end
     end
 

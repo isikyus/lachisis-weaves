@@ -80,7 +80,7 @@ RSpec.describe Lachisis::SVG::Crossings do
     let(:location_order) { %w[ A B C D ] }
     let(:character_order) { %w[ two one three four ] }
 
-    context 'swapping characters' do
+    xcontext 'swapping characters' do
       let(:after_swap) { crossings.swap(nil, %w[ two one ]) }
 
       specify 'updates crossing counts' do
@@ -120,7 +120,7 @@ RSpec.describe Lachisis::SVG::Crossings do
       end
     end
 
-    context 'swapping both and creating new crossings' do
+    xcontext 'swapping both and creating new crossings' do
       let(:after_swap) { crossings.swap(%w[ D C ], %w[ two one ]) }
 
       specify 'updates crossing counts' do

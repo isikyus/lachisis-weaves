@@ -117,13 +117,39 @@ module Lachisis
           # First, swap from start to finish to move the first element to
           # the end; then swap from second-last to beginning to move the
           # old last element back to the start.
-          (affected_locations + affected_locations.reverse[1..]).each_cons(2) do |first, last|
+          #
+          # TODO: this is wrong, because the indices won't remain correct through the swaps.
+          # Need do swap by index, not by character.
+          (affected_locations + affected_locations.reverse[2..]).each_cons(2) do |first, last|
             new_locs[first[1]], new_locs[last[1]] = new_locs[last[1]], new_locs[first[1]]
             new_crossings = update_crossings_with_swap(new_crossings, new_locs, new_chars, first[0], first[1], last[0], last[1])
           end
         end
 
-        # TODO: handle characters too
+        if character_swap
+          new_chars = @characters.dup
+          affected_characters = @characters.each_with_index.select do |char, index|
+            # Use the flip-flop operator to pick the two affected characters
+            # and any between them. Note we need an `if` to do this as flip-flop
+            # only works in that context.
+            if character_swap.include?(char) .. character_swap.include?(char)
+              true
+            end
+          end
+
+          unless affected_characters.values_at(0, -1).map(&:first).to_set == character_swap.to_set
+            raise "Locations at either end of list should be the values we're swapping"
+          end
+
+          # Calculated updated crossings as a series of adjacent swaps.
+          # First, swap from start to finish to move the first element to
+          # the end; then swap from second-last to beginning to move the
+          # old last element back to the start.
+          (affected_characters + affected_characters.reverse[2..]).each_cons(2) do |first, last|
+            new_chars[first[1]], new_chars[last[1]] = new_chars[last[1]], new_chars[first[1]]
+            new_crossings = update_crossings_with_char_swap(new_crossings, new_locs, new_chars, first[0], last[0])
+          end
+        end
 
         result = Crossings.new(@weave, new_locs, new_chars)
         result.crossings = new_crossings
@@ -371,6 +397,58 @@ module Lachisis
         end
 
         remaining_crossings + new_crossings
+      end
+
+      # Update the list of crossings given that two adjacent characters are
+      # swapped.
+      #
+      # @param crossings [Array<Crossing>]
+      # @param locs [Array<String>] Locations
+      # @param chars [Array<String>] Characters
+      # @param first_character [String]
+      # @param first_character_index [Integer]
+      # @param second_character [String]
+      # @param second_character_index [Integer]
+      def update_crossings_with_char_swap(crossings, locs, chars, first_character, second_character)
+        swapped = Set[first_character, second_character]
+
+        # Since lines belong to the same character all the way through, swapping two adjacent
+        # characters can only affect intersections between those two characters. Everyone else
+        # is either always above both, always below both, or crosses one or both of them due
+        # to moving across their location (in which case only a location swap could make a
+        # difference).
+        #
+        # In a similar way, a character swap can only cross or uncross two characters
+        # between a pair of frames if the characters either _start_ or _finish_ in the
+        # same location, but not both. If they both start and finish in different locations,
+        # then either (a) one has start and end locations both above the other's (so
+        # it remains above all the way through), or (b) one starts above and ends below
+        # the other's location(s), so the location order require a crossing and no character
+        # swaps will make a difference.
+        # If both characters start and end in the same location they can't possibly cross,
+        # as the character order is fixed from frame to frame.
+        #
+        # So, given two characters who start (or by symmetry, finish) in location A, and
+        # diverge to locations B and C, a swap must either cross them (if previously not
+        # crossed) or uncross them (if crossed). Suppose character 1 goes to B, and 2 to
+        # C (and 1 was above 2 before the swap). If B is above C, then 1 and 2 would not
+        # have crossed before, and will after the swap. If B's below C, then 1 and 2 did
+        # cross originally and will not after the swap.
+        # This still holds if either ending location is the same as A.
+        #
+        # That means we only need to toggle the state of all and only crossings in this
+        # A-(to-or-from)-B-and-C onfiguration.
+
+        affected_crossings = @weave.frames.each_cons(2).map do |frame1, frame2|
+          {
+            from: frame1.events.select { |e| (e.characters & swapped).any? }.map(&:location),
+            to: frame2.events.select { |e| (e.characters & swapped).any? }.map(&:location)
+          }
+        end
+          .select { |pair| (pair[:from].length == 1) ^ (pair[:to].length == 1) }
+          .map { |pair| Crossing.new(swapped, pair[:from], pair[:to]) }
+
+        (crossings + affected_crossings) - (crossings & affected_crossings)
       end
     end
 

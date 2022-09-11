@@ -100,16 +100,16 @@ module Lachisis
 
         if location_swap
           new_locs = @locations.dup
-          affected_locations = @locations.each_with_index.select do |loc, index|
+          affected_loc_indices = @locations.each_with_index.select do |loc, index|
             # Use the flip-flop operator to pick the two affected locations
             # and any between them. Note we need an `if` to do this as flip-flop
             # only works in that context.
             if location_swap.include?(loc) .. location_swap.include?(loc)
               true
             end
-          end
+          end.map(&:last)
 
-          unless affected_locations.values_at(0, -1).map(&:first).to_set == location_swap.to_set
+          unless affected_loc_indices.values_at(0, -1).map { |i| new_locs[i] }.to_set == location_swap.to_set
             raise "Locations at either end of list should be the values we're swapping"
           end
 
@@ -120,34 +120,38 @@ module Lachisis
           #
           # TODO: this is wrong, because the indices won't remain correct through the swaps.
           # Need do swap by index, not by character.
-          (affected_locations + affected_locations.reverse[2..]).each_cons(2) do |first, last|
-            new_locs[first[1]], new_locs[last[1]] = new_locs[last[1]], new_locs[first[1]]
-            new_crossings = update_crossings_with_swap(new_crossings, new_locs, new_chars, first[0], first[1], last[0], last[1])
+          (affected_loc_indices + affected_loc_indices.reverse[2..]).each_cons(2) do |first, last|
+            first_loc = new_locs[first]
+            last_loc = new_locs[last]
+            new_locs[first], new_locs[last] = new_locs[last], new_locs[first]
+            new_crossings = update_crossings_with_swap(new_crossings, new_locs, new_chars, first_loc, first, last_loc, last)
           end
         end
 
         if character_swap
           new_chars = @characters.dup
-          affected_characters = @characters.each_with_index.select do |char, index|
+          affected_char_indices = @characters.each_with_index.select do |char, index|
             # Use the flip-flop operator to pick the two affected characters
             # and any between them. Note we need an `if` to do this as flip-flop
             # only works in that context.
             if character_swap.include?(char) .. character_swap.include?(char)
               true
             end
+          end.map(&:last)
+
+          unless affected_char_indices.values_at(0, -1).map { |i| new_chars[i] }.to_set == character_swap.to_set
+            raise "Characters at either end of list should be the values we're swapping"
           end
 
-          unless affected_characters.values_at(0, -1).map(&:first).to_set == character_swap.to_set
-            raise "Locations at either end of list should be the values we're swapping"
-          end
-
-          # Calculated updated crossings as a series of adjacent swaps.
+          # Calculate updated crossings as a series of adjacent swaps.
           # First, swap from start to finish to move the first element to
           # the end; then swap from second-last to beginning to move the
           # old last element back to the start.
-          (affected_characters + affected_characters.reverse[2..]).each_cons(2) do |first, last|
-            new_chars[first[1]], new_chars[last[1]] = new_chars[last[1]], new_chars[first[1]]
-            new_crossings = update_crossings_with_char_swap(new_crossings, new_locs, new_chars, first[0], last[0])
+          (affected_char_indices + affected_char_indices.reverse[2..]).each_cons(2) do |first, last|
+            first_char = new_chars[first]
+            last_char = new_chars[last]
+            new_chars[first], new_chars[last] = new_chars[last], new_chars[first]
+            new_crossings = update_crossings_with_char_swap(new_crossings, new_locs, new_chars, first_char, last_char)
           end
         end
 
@@ -352,7 +356,7 @@ module Lachisis
             char1, event1 = *departure
             pp [char1, event1, initial_index1]
             _char, destination1, index1 = *arriving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
-            leaving_pair[initial_index1..].each do |char2, event2|
+            leaving_pair[(initial_index1 + 1)..].each do |char2, event2|
               next if event1 == event2 # Not actually a swap in this case
               _char, destination2, index2 = *arriving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
 
@@ -367,15 +371,15 @@ module Lachisis
             end
           end
 
-          # Characters pairs arriving from (A, B) who now cross
+          # Characters pairs arriving at (A, B) who now cross
           new_arriving = []
           arriving_pair = arriving_first + arriving_second
           arriving_pair.each_with_index do |arrival, initial_index1|
             char1, event1 = *arrival
-            _char, destination1, index1 = *arriving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
-            arriving_pair[initial_index1..].each do |char2, event2|
+            _char, destination1, index1 = *leaving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
+            arriving_pair[(initial_index1 + 1)..].each do |char2, event2|
               next if event1 == event2 # Not actually a swap in this case
-              _char, destination2, index2 = *arriving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
+              _char, destination2, index2 = *leaving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
 
               if index1 < index2 # Character arriving at the previously-higher location left from a higher destination
                 crossing = Crossing.new(

@@ -21,7 +21,7 @@ RSpec.describe 'read_events.rb' do
     raise e.exception("#{e.message}\nError output was:\n\n#{error}")
   end
 
-  xcontext 'with known input and output' do
+  context 'with known input and output' do
     describe 'so-called "annealed" layout' do
       let(:annealed_svg) do
         File.open('spec/fixtures/kathrakopolis-annealed.svg', &:read)

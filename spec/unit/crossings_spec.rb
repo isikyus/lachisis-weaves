@@ -7,6 +7,16 @@ RSpec.describe Lachisis::SVG::Crossings do
   subject(:crossings) { Lachisis::SVG::Crossings.count(weave, location_order, character_order) }
 
   before do
+    # Initial layout (assuming lexicographic ordering)
+    #
+    # A 1 --------- 1 A
+    #   2 --\
+    #        \
+    # B 3 ----\---- 3 B
+    #          \
+    # C         \-- 2 C
+    #
+    # D 4 --------- 4 D
     weave.add(0, 0, Lachisis::Event.new('A', %w[ one two ]))
     weave.add(0, 0, Lachisis::Event.new('B', %w[ three ]))
     weave.add(0, 0, Lachisis::Event.new('D', %w[ four ]))
@@ -77,6 +87,16 @@ RSpec.describe Lachisis::SVG::Crossings do
   end
 
   describe '#swap' do
+    # Initial layout (with this order)
+    #
+    # A 2 -\          A
+    #   1 --\------ 1
+    #        \
+    # B 3 ----\---- 3 B
+    #          \
+    # C         \-- 2 C
+    #
+    # D 4 --------- 4 D
     let(:location_order) { %w[ A B C D ] }
     let(:character_order) { %w[ two one three four ] }
 
@@ -120,7 +140,17 @@ RSpec.describe Lachisis::SVG::Crossings do
       end
     end
 
-    xcontext 'swapping both and creating new crossings' do
+    context 'swapping both and creating new crossings' do
+      # Layout after swap
+      #
+      # A 1 --------- 1 A
+      #   2 ----\
+      #         |
+      # B 3 ----|---- 3 B
+      #         |
+      # D 4 ----|---- 4 D
+      #         |
+      # C       \---- 2 C
       let(:after_swap) { crossings.swap(%w[ D C ], %w[ two one ]) }
 
       specify 'updates crossing counts' do

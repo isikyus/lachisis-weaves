@@ -100,11 +100,17 @@ module Lachisis
 
         if location_swap
           new_locs = @locations.dup
+          start = location_swap
+          finish = []
           affected_loc_indices = @locations.each_with_index.select do |loc, index|
             # Use the flip-flop operator to pick the two affected locations
             # and any between them. Note we need an `if` to do this as flip-flop
             # only works in that context.
-            if location_swap.include?(loc) .. location_swap.include?(loc)
+            #
+            # Also we can't have both ends of the flip-flop match on the same
+            # element or we get just that element.
+            if start.include?(loc) .. finish.include?(loc)
+              finish = location_swap
               true
             end
           end.map(&:last)
@@ -117,10 +123,10 @@ module Lachisis
           # First, swap from start to finish to move the first element to
           # the end; then swap from second-last to beginning to move the
           # old last element back to the start.
-          #
-          # TODO: this is wrong, because the indices won't remain correct through the swaps.
-          # Need do swap by index, not by character.
-          (affected_loc_indices + affected_loc_indices.reverse[2..]).each_cons(2) do |first, last|
+          swaps = [affected_loc_indices, affected_loc_indices.reverse[1..]]
+              .map { |indices| indices.each_cons(2).to_a }
+              .flatten(1)
+          swaps.each do |first, last|
             first_loc = new_locs[first]
             last_loc = new_locs[last]
             new_locs[first], new_locs[last] = new_locs[last], new_locs[first]
@@ -354,7 +360,6 @@ module Lachisis
           leaving_pair = leaving_first + leaving_second
           leaving_pair.each_with_index do |departure, initial_index1|
             char1, event1 = *departure
-            pp [char1, event1, initial_index1]
             _char, destination1, index1 = *arriving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
             leaving_pair[(initial_index1 + 1)..].each do |char2, event2|
               next if event1 == event2 # Not actually a swap in this case

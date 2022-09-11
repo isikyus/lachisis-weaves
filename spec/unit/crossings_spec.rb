@@ -172,6 +172,38 @@ RSpec.describe Lachisis::SVG::Crossings do
       end
     end
 
+    context 'swapping locations over a longer distance' do
+      # Initial layout (with this order)
+      #
+      # A 2 -\          A
+      #   1 --\------ 1
+      #        \
+      # D 4 ----\---- 4 D
+      #          \
+      # C         \-- 2 C
+      #
+      # B 3 --------- 3 B
+      let(:after_swap) { crossings.swap(%w[ D B ], nil) }
+
+      specify 'updates crossing counts' do
+        expect(after_swap.total).to eq 2
+      end
+
+      specify 'updates which characters are involved' do
+        expect(after_swap.by_character).to eq(
+          Set[:two, :one] => 2,
+          Set[:two, :four] => 2
+        )
+      end
+
+      specify 'updates which locations are involved' do
+        expect(after_swap.by_location).to eq(
+          Set[:A, :C] => 2,
+          Set[:A, :C, :D] => 2
+        )
+      end
+    end
+
     pending 'need to test more cases to get full test coverage'
   end
 end

@@ -40,6 +40,8 @@ module Lachisis
             new_locations == other.new_locations
         end
 
+        alias == eql?
+
         def hash
           characters.hash + old_locations.hash + new_locations.hash
         end
@@ -100,33 +102,7 @@ module Lachisis
 
         if location_swap
           new_locs = @locations.dup
-          start = location_swap
-          finish = []
-          affected_loc_indices = @locations.each_with_index.select do |loc, index|
-            # Use the flip-flop operator to pick the two affected locations
-            # and any between them. Note we need an `if` to do this as flip-flop
-            # only works in that context.
-            #
-            # Also we can't have both ends of the flip-flop match on the same
-            # element or we get just that element.
-            if start.include?(loc) .. finish.include?(loc)
-              finish = location_swap
-              true
-            end
-          end.map(&:last)
-
-          unless affected_loc_indices.values_at(0, -1).map { |i| new_locs[i] }.to_set == location_swap.to_set
-            raise "Locations at either end of list should be the values we're swapping"
-          end
-
-          # Calculated updated crossings as a series of adjacent swaps.
-          # First, swap from start to finish to move the first element to
-          # the end; then swap from second-last to beginning to move the
-          # old last element back to the start.
-          swaps = [affected_loc_indices, affected_loc_indices.reverse[1..]]
-              .map { |indices| indices.each_cons(2).to_a }
-              .flatten(1)
-          swaps.each do |first, last|
+          adjacent_swaps(location_swap, new_locs).each do |first, last|
             first_loc = new_locs[first]
             last_loc = new_locs[last]
             new_locs[first], new_locs[last] = new_locs[last], new_locs[first]
@@ -136,24 +112,7 @@ module Lachisis
 
         if character_swap
           new_chars = @characters.dup
-          affected_char_indices = @characters.each_with_index.select do |char, index|
-            # Use the flip-flop operator to pick the two affected characters
-            # and any between them. Note we need an `if` to do this as flip-flop
-            # only works in that context.
-            if character_swap.include?(char) .. character_swap.include?(char)
-              true
-            end
-          end.map(&:last)
-
-          unless affected_char_indices.values_at(0, -1).map { |i| new_chars[i] }.to_set == character_swap.to_set
-            raise "Characters at either end of list should be the values we're swapping"
-          end
-
-          # Calculate updated crossings as a series of adjacent swaps.
-          # First, swap from start to finish to move the first element to
-          # the end; then swap from second-last to beginning to move the
-          # old last element back to the start.
-          (affected_char_indices + affected_char_indices.reverse[2..]).each_cons(2) do |first, last|
+          adjacent_swaps(character_swap, new_chars).each do |first, last|
             first_char = new_chars[first]
             last_char = new_chars[last]
             new_chars[first], new_chars[last] = new_chars[last], new_chars[first]
@@ -263,6 +222,49 @@ module Lachisis
         end
 
         crossing_chars
+      end
+
+
+      # Given two list entries to swap, find a sequence of swaps
+      # of ajacent pairs that together swap the original two entries
+      # (and leave everything else back where it was)
+      #
+      # @param swap [Array<Object>] The two elements to swap
+      # @param list [Array<Object>] The list in which to swap them
+      #
+      # @return [Array<Array<Integer>]] List of pairs of integers;
+      #                             each pair is two adjacent elements
+      #                             to swap. Order matters.
+      def adjacent_swaps(swap, list)
+        start = swap
+        finish = []
+        affected_indices = list.each_with_index.select do |loc, index|
+          # Use the flip-flop operator to pick the two affected locations
+          # and any between them. Note we need an `if` to do this as flip-flop
+          # only works in that context.
+          #
+          # Also we can't have both ends of the flip-flop match on the same
+          # element or we get just that element.
+          if start.include?(loc) .. finish.include?(loc)
+            finish = swap
+            true
+          end
+        end.map(&:last)
+
+        unless affected_indices.values_at(0, -1).map { |i| list[i] }.to_set == swap.to_set
+          raise "Locations at either end of list should be the values we're swapping"
+        end
+
+        # Calculated updated crossings as a series of adjacent swaps.
+        # First, swap from start to finish to move the first element to
+        # the end; then swap from second-last to beginning to move the
+        # old last element back to the start.
+        [
+          affected_indices,
+          affected_indices.reverse[1..]
+        ]
+          .map { |indices| indices.each_cons(2).to_a }
+          .flatten(1)
       end
 
       # Update the list of crossings given that two adjacent locations are
@@ -457,7 +459,9 @@ module Lachisis
           .select { |pair| (pair[:from].length == 1) ^ (pair[:to].length == 1) }
           .map { |pair| Crossing.new(swapped, pair[:from], pair[:to]) }
 
-        (crossings + affected_crossings) - (crossings & affected_crossings)
+        removed, added = affected_crossings.partition { |c| crossings.include?(c) }
+
+        (crossings - removed) + (added * 2)
       end
     end
 

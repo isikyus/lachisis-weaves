@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<tag>
+  Source: https://www.isikyus.com/wordpress/2018/07/session-1-rocks-fall-defenders-of-kathrakopolis/
+  Vinnie, Chapton, Jethan, and Wildflower are owned by their
+  players, and used here with permission.
+              
+  <?lachisis enter:vinnie location:travel-quarter time:-1 ?>
+  <?lachisis enter:vinnie location:pans-house time:0 ?>
+  <?lachisis present:pan ?>
+  <?lachisis enter:vinnie location:labyrinth ?>
+  <?lachisis present:minotaur ?>
+  <?lachisis location:travel-quarter present:wildflower time:-1 time:0 ?>
+  <?lachisis location:wildflowers_house enter:wildflower ?>
+  <?lachisis enter:katraktes enter:wildflower location:mile ?>
+  <?lachisis enter:aristechon ?>
+  <?lachisis enter:cordwynn_zandt ?>
+  <?lachisis present:chapton location:mile time:-1 time:0 ?>
+  <?lachisis enter:chapton location:peak  time:1.5?>
+  <?lachisis location:docks enter:chapton enter:lyssa_thane enter:delph time:1.6 ?>
+  <?lachisis location:great_pillar enter:chapton enter:delph enter:lyssa_thane  time:1.9 ?>
+  <?lachisis location:travel-quarter present:jethan time:-1 ?>
+  <?lachisis location:jethans_place enter:jethan time:0 ?>
+  <?lachisis location:docks enter:delph enter:lyssa_thane enter:jethan ?>
+  <?lachisis location:peak enter:jethan time:1.5 ?>
+  <?lachisis present:argus ?>
+  <?lachisis present:jerome ?>
+  <?lachisis enter:jethan location:noble_quarter time:1.6 ?>
+  <?lachisis present:thane_the_elder location:thanes_house enter:jethan ?>
+  <?lachisis location:great_pillar enter:jethan enter:thane_the_elder ?>
+  <?lachisis enter:pan ?>
+  <?lachisis time:1.9 enter:jethan location:great_pillar ?>
+  <?lachisis location:moon_pool enter:vinnie time:1.9 ?>
+  <?lachisis location:mile enter:wildflower time:1.9 ?>
+</tag>

@@ -36,11 +36,12 @@ Example valid instructions:
   was, plus one; starts at 0).
 
 * `<?lachisis location:somewhere present:someone ?>` As above, except records
-    that `someone` was here all along. Currently this only works if this is the character's
-    first appearence in the entire story.
+    that `someone` was here already at the current time (i.e. earlier than anyone
+    arriving in this same event.
 
-    * [ ] Technically this should only back-propogate to earlier points in time (e.g. if
-          you used it in a flashback) but I haven't built that.
+  * [ ] Currently equivalent to `enter:` but should really cause propogation
+    to behave somewhat differently (i.e. it will affect where the character
+    is shown as being before they appear in this event).
 
 * `<?lachisis enter:another_person ?>` Record a new event at the current location
   (wherever the last event was), with all the current characters plus

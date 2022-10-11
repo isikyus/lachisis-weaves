@@ -39,6 +39,19 @@ module Lachisis
       end
     end
 
+    # @return [Array<String>] Names of all locations in the weave
+    def locations
+      events.map(&:location).uniq
+    end
+
+    # @return [Array<String>] Names of all characters in the weave
+    def characters
+      events
+        .map(&:characters)
+        .inject(&:union)
+        .to_a
+    end
+
     # Add an event to the weave at a given time, creating a new frame
     # if necessary for that time. If an event exists already at this
     # time and location, the new characters will be merged into it.
@@ -101,6 +114,14 @@ module Lachisis
 
         end
       end
+    end
+
+    private
+
+    def events
+      @events_by_time
+        .values
+        .flat_map(&:to_a)
     end
   end
 end

@@ -1,10 +1,10 @@
 require 'lachisis/event'
-require 'lachisis/svg'
+require 'lachisis/layout'
 require 'lachisis/weave'
 
-RSpec.describe Lachisis::SVG::Crossings do
+RSpec.describe Lachisis::Layout::Crossings do
   let(:weave) { Lachisis::Weave.new }
-  subject(:crossings) { Lachisis::SVG::Crossings.count(weave, location_order, character_order) }
+  subject(:crossings) { Lachisis::Layout::Crossings.count(weave, location_order, character_order) }
 
   before do
     # Initial layout (assuming lexicographic ordering)

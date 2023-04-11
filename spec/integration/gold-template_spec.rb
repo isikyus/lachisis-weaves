@@ -22,7 +22,7 @@ RSpec.describe 'read_events.rb' do
   end
 
   context 'with known input and output' do
-    describe 'so-called "annealed" layout' do
+    xdescribe 'so-called "annealed" layout' do
       let(:annealed_svg) do
         File.open('spec/fixtures/kathrakopolis-annealed.svg', &:read)
       end
@@ -30,6 +30,17 @@ RSpec.describe 'read_events.rb' do
       specify 'generates a known-good layout' do
         svg = generate_with_args('-s', 'spec/fixtures/kathrakopolis.xml')
         expect(svg).to eq(annealed_svg)
+      end
+    end
+
+    describe 'manual layout' do
+      let(:manual_svg) do
+        File.open('spec/fixtures/kathrakopolis-manual.svg', &:read)
+      end
+
+      specify 'generates a known-good layout' do
+        svg = generate_with_args('-s', 'spec/fixtures/kathrakopolis.xml')
+        expect(svg).to eq(manual_svg)
       end
     end
   end

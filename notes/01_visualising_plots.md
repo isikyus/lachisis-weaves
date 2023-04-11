@@ -524,3 +524,10 @@ Locations A0-D0 must all be outside the ABCD group Oberon moves in, otherwise th
 Likewise A'-D' must be outside the group or the characters ending up there would be crossed by Oberon's return.
     Wait, no, this doesn't hold as we could rearrange ABCD so A and D are adjacent without creating a crossing.
     We can mitigate it by having Oberon move A->B->C->D->C->B->A, but that actually violates our conjecture as it creates pairs of "up" and "down" edges in the travel graph between the same pairs of nodes, and we can construct a cycle going A->B (up), B->C (down), and so on that cannot be ordered.
+
+---------------
+
+OK, none of this is getting me anywhere.
+Let's set it aside for now, and try something that doesn't involve bashing my head against NP-complete algorithm design.
+
+Can I just build a system for fixing the layout manually?

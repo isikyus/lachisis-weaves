@@ -603,5 +603,16 @@ module Lachisis
         $stderr.puts(msg)
       end
     end
+
+    # Doesn't try to do any auto-layout; instead relies on sorting infomration
+    # added by the file author.
+    class Sorted
+      def layout(weave)
+        [
+          weave.locations.sort,
+          weave.characters.sort
+        ]
+      end
+    end
   end
 end

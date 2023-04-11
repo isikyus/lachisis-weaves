@@ -49,7 +49,7 @@ module Lachisis
     def render_callback(options)
       if options.svg
         @render_result = nil
-        @layout ||= Lachisis::Layout::SimulatedAnnealing.new
+        @layout ||= Lachisis::Layout::Sorted.new
         renderer = Lachisis::SVG.new(@layout)
         ->(weave) {
           @render_result = renderer.call(weave)

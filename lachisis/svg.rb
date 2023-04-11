@@ -78,7 +78,7 @@ module Lachisis
       max_y = last_location_end + edge_offset
       xml_data = [
         '<?xml version="1.0"?>',
-        "<svg width='#{max_x}' height='#{max_y}'>"
+        "<svg width='#{max_x}' height='#{max_y}' xmlns='http://www.w3.org/2000/svg'>"
       ]
 
       threads.each do |character, events|

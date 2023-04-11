@@ -609,9 +609,20 @@ module Lachisis
     class Sorted
       def layout(weave)
         [
-          weave.locations.sort,
-          weave.characters.sort
+          apply_sorting(weave.locations, weave.location_sorting),
+          apply_sorting(weave.characters, weave.character_sorting),
         ]
+      end
+
+      private
+
+      def apply_sorting(list, sort_rules)
+        list.sort_by do |item|
+          [
+            sort_rules.index { |rule| rule.match?(item) } || -1,
+            item
+          ]
+        end
       end
     end
   end

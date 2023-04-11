@@ -43,6 +43,12 @@ module Lachisis
       times = []
 
       updates = content.strip.split(/\s+/)
+
+      if ['sort-locations', 'sort-characters'].include?(updates[0])
+        sorting_hint(*updates)
+        return
+      end
+
       updates.each do |update|
         event, value, *extra = update.split(':')
 
@@ -92,6 +98,26 @@ module Lachisis
                              existing_chars | entering_chars)
 
         @weave.add(@major_time, @minor_time, @current)
+      end
+    end
+
+    # @param type ["sort-locations","sort-characters"] What to sort
+    # @param order [Array<String>] What order to sort those things in.
+    #               May include asterisks as wild cards.
+    def sorting_hint(type, *order)
+      regexes = order.map do |pattern|
+        escaped = Regexp.escape(pattern)
+        escaped.gsub!('\*', '.*') if pattern.include?('*')
+        Regexp.new("^#{escaped}$")
+      end
+
+      case type
+        when 'sort-locations'
+          @weave.location_sorting = regexes
+        when 'sort-characters'
+          @weave.character_sorting = regexes
+        else
+          raise "Unknown sorting hint type #{type}"
       end
     end
 

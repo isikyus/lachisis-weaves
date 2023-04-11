@@ -3,7 +3,9 @@
   Source: https://www.isikyus.com/wordpress/2018/07/session-1-rocks-fall-defenders-of-kathrakopolis/
   Vinnie, Chapton, Jethan, and Wildflower are owned by their
   players, and used here with permission.
-              
+
+  <?lachisis sort-locations great-pillar docks mile travel-quarter pans-house ?>
+
   <?lachisis enter:vinnie location:travel-quarter time:-1 ?>
   <?lachisis enter:vinnie location:pans-house time:0 ?>
   <?lachisis present:pan ?>

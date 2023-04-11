@@ -58,6 +58,8 @@ module Lachisis
       else
         @render_result = ''
         ->(weave) {
+          @render_result << "Location order: #{weave.location_sorting.inspect}\n"
+          @render_result << "Character order: #{weave.character_sorting.inspect}\n"
           weave.frames.each do |frame|
             frame.events.each do |event|
               @render_result << sprintf("%11s : %10s\n", frame.timestamp, event)

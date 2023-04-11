@@ -1,5 +1,17 @@
 <?xml version="1.0"?>
 <svg width='390' height='342' xmlns='http://www.w3.org/2000/svg'>
+<text x="252" y="30.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">great_pillar</text> 
+<text x="87" y="66.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">thanes_house</text> 
+<text x="222" y="87.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">noble_quarter</text> 
+<text x="87" y="111.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">docks</text> 
+<text x="87" y="144.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">peak</text> 
+<text x="102" y="171.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">jethans_place</text> 
+<text x="87" y="201.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">mile</text> 
+<text x="117" y="231.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">wildflowers_house</text> 
+<text x="87" y="255.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">travel-quarter</text> 
+<text x="87" y="282.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">pans-house</text> 
+<text x="87" y="306.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">labyrinth</text> 
+<text x="282" y="327.0" text-anchor="end" dominant-baseline="middle" font-size="12" opacity="0.5">moon_pool</text> 
 <path id="thread_vinnie" fill="none" stroke="black" stroke_width="3" d="M 90 252 100 252 105 282 115 282 120 282 130 282 135 306 145 306 150 306 160 306 165 306 175 306 180 306 190 306 195 306 205 306 210 306 220 306 225 306 235 306 240 306 250 306 255 306 265 306 270 306 280 306 285 324 295 324"/>
 <text x="87" y="252" text-anchor="end" dominant-baseline="middle" font-size="6">vinnie</text>
 <text x="298" y="324" text-anchor="start" dominant-baseline="middle" font-size="6">vinnie</text>

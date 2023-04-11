@@ -81,6 +81,19 @@ module Lachisis
         "<svg width='#{max_x}' height='#{max_y}' xmlns='http://www.w3.org/2000/svg'>"
       ]
 
+      # Draw location labels
+      location_spacing.each do |loc, y_position|
+        _frame, first_frame_index = weave
+          .frames
+          .each_with_index
+          .detect { |f, _i| f.events.map(&:location).include?(loc) }
+
+        label_y = y_position + (location_sizes[loc] * THREAD_SPACING / 2.0)
+        label_x = max_name_size + (first_frame_index * EVENT_SPACE)
+        xml_data << %{<text x="#{label_x - LABEL_OFFSET}" y="#{label_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE * 2}" opacity="0.5">#{loc}</text> }
+      end
+
+      # Draw character threads
       threads.each do |character, events|
         path_points = events.flat_map do |index_and_event|
           index_and_event => {index:, event:}

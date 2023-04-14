@@ -19,16 +19,21 @@ For SVG output:
 bundle exec ruby read_events.rb -s <filename>
 ```
 
-`<filename>` should be a valid XML file. Lachisis (so far) ignores the XML
-except for `<?lachisis ... ?>` processing instructions, and generates a
-sequence of "events" (in the relativity sense: a point in space-time) for
-graphing.
+`<filename>` should be a valid XML file.
 
-Valid processing instructions consist of a sequence of pairs `name:value`,
+## "XML" file format
+
+Lachisis (so far) ignores the XML except for `<?lachisis ... ?>` processing
+instructions. Most of these will define events of characters interacting
+(think "event" in the relativity sense: points in space-time) for graphing.
+
+### Defining Events
+
+Valid event processing instructions consist of a sequence of pairs `name:value`,
 separated by whitespace. Values must not contain whitespace or
 equals signs (not even in quotes).
 
-Example valid instructions:
+Examples:
 
 * `<?lachisis location:somewhere enter:someone ?>` Record an event that `someone`
   arrived at `somewhere`, using the current major timestamp (default 0.0),
@@ -64,4 +69,42 @@ Example valid instructions:
 
 * `<?lachisis enter:statue enter:someone location:atrium ?>` Records that
   `statue` and `someone` were together in `atrium`, at the current
-  major/next minor timestamp
+  major/next minor timestamp.
+
+### Special Processing Instructions
+
+These take the format `<?lachisis [special-instruction] [arguments ...] ?>`.
+Currently there are only two, both used to control layout:
+
+* `<?lachisis sort-locations there here ... ?>` Lay out the named
+  locations in the given order in the diagram. E.g.
+
+  ```
+  there  char1 ----\
+         char2 -----\----- char2
+                     \
+  here                \--- char1
+  ...
+  ```
+
+  The list of location names may contain '\*' as a wildcard. This works
+  like in shell globs: i.e. it matches 0 or more of any character.
+  Multiple locations matching the same wildcard sort lexicographically.
+
+  * [ ] However beware that the current code uses the first match it finds,
+    not the most specific, so getting a specific location to sort after a
+    wilcard one is tricky.
+
+  If a location is not included in the sort-locations processing instruction
+  its position is left to the discretion of the layout algorithm.
+  (Currently the algorithm just puts all these un-stored locations at the top
+   of the diagram). To override this you can use a plain '\*' to catch all
+  non-matched locations, but see the caveat above.
+
+  May only be specified once; if sort-locations is used multiple times
+  the last one takes precedence (even for earlier events).
+
+* `<?lachisis sort-characters bob alice ... ?>` As for `sort-locations`,
+  but only affects the order of characters within a location. The sort order
+  is global for the diagram, but only applies to characrters in the same
+  location (otherwise `sort-locations` takes precedence).

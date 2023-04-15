@@ -84,7 +84,7 @@ module Lachisis
         events_at_time.delete(existing_event)
 
         merged = Event.new(event.location,
-                           existing_event.characters | event.characters)
+                           existing_event.actions.merge(event.actions))
         events_at_time << merged
       else
         events_at_time << event
@@ -109,10 +109,10 @@ module Lachisis
             # Nothing to do - we already now where this person is
           elsif last_appearence
             # Still in the same place they were before
-            add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, [character]))
+            add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, character => :present))
           elsif thread.any?
             # Before start of thread; assume they're where we first see them
-            add_with_timestamp(frame.timestamp, Lachisis::Event.new(thread.first.event.location, [character]))
+            add_with_timestamp(frame.timestamp, Lachisis::Event.new(thread.first.event.location, character => :present))
           else
             raise "Thread for #{character} exists but is empty. This should not happen."
           end

@@ -37,9 +37,8 @@ module Lachisis
       return unless name.downcase == NAMESPACE
 
       location = nil
-      existing_chars = @current&.characters || []
-      entering_chars = []
-      present_chars = []
+      existing_actions = @current&.actions || {}
+      new_actions = {}
       times = []
 
       updates = content.strip.split(/\s+/)
@@ -59,32 +58,27 @@ module Lachisis
         case event
         when 'time'
           times << value.to_f
-          existing_chars = []
+          existing_actions = {}
 
         when 'location'
           location = value
-          existing_chars = []
+          existing_actions = {}
 
-        when 'enter'
-          entering_chars << value
-
-        when 'present'
-          present_chars << value
+        when 'enter', 'present'
+          new_actions[value.to_sym] = event.to_sym
 
         else
           raise "Unknown update type #{update}"
         end
       end
 
-      entering_chars += present_chars
-
       if times.any?
         raise "Invalid processing instruction #{content}: need location" unless location
         @minor_time = 0
 
         times.sort.each do |t|
-          event ||= Event.new(location, [])
-          event.characters |= entering_chars
+          event ||= Event.new(location, {})
+          event.actions.merge!(new_actions)
 
           @major_time = t
           @weave.add(@major_time, @minor_time, event)
@@ -94,8 +88,10 @@ module Lachisis
       else
         @minor_time += 1
         location ||= @current.location
-        @current = Event.new(location,
-                             existing_chars | entering_chars)
+        @current = Event.new(
+          location,
+          existing_actions.merge(new_actions)
+        )
 
         @weave.add(@major_time, @minor_time, @current)
       end

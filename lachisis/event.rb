@@ -1,27 +1,37 @@
 module Lachisis
   class Event
-    def initialize(location, characters)
+    def initialize(location, actions)
       @location = location
-      @characters = characters.to_set
+      @actions = actions
     end
 
-    attr_reader :location, :characters
+    attr_reader :location, :actions
 
     # TODO: would be nice if we were immutable
     def location= location
       @location = location
     end
 
-    def characters= chars
-      @characters = chars.to_set
+    def actions= actions
+      @actions = actions
     end
 
     def inspect
       "<Event#{__id__}: #{to_s}>"
     end
 
+    def characters
+      actions.keys.to_set
+    end
+
     def to_s
-      "At %15s : %s" % [location, characters.sort.join(', ')]
+      "At %15s : %s" % [
+        location,
+        actions
+          .sort_by(&:first)
+          .map { |c, a| "#{c}:#{a}" }
+          .join(', ')
+      ]
     end
   end
 

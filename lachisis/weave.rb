@@ -106,7 +106,7 @@ module Lachisis
           last_appearence = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
 
           if last_appearence && frame.events.include?(last_appearence.event)
-            # Nothing to do - we already now where this person is
+            # Nothing to do - we already know where this person is
           elsif last_appearence
             # Still in the same place they were before
             add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, character => :present))

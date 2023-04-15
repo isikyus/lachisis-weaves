@@ -55,7 +55,6 @@ module Lachisis
         raise "Should only calculate crossings once, at initialisation" if @crossings
         @crossings = []
 
-        # TODO: better not to do this calculation in #initialize?
         last_frame, *frames = @weave.frames
 
         last_order = char_order(@locations, @characters, last_frame)

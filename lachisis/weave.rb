@@ -100,12 +100,13 @@ module Lachisis
       # Cache a copy of thread data since we're about to modify the records it's based on
       threads_before = threads
       frames.each do |frame|
+        events_before = frame.events.dup
         threads_before.each do |character, thread|
           # TODO: could do this more efficiently if the type expressed that these were in order
           next_appearence = thread.detect { |e| e.timestamp > frame.timestamp }
           last_appearence = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
 
-          if last_appearence && frame.events.include?(last_appearence.event)
+          if last_appearence && events_before.include?(last_appearence.event)
             # Nothing to do - we already know where this person is
           elsif next_appearence && next_appearence.present?(character)
             # Assume they go immediately to where we see them next

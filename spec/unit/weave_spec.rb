@@ -206,22 +206,45 @@ RSpec.describe Lachisis::Weave do
     end
 
     context 'with someone whose last location had a higher minor timestamp' do
-      before do
-        weave.add(1.6, 1, Lachisis::Event.new('pans-house', { pan: :present }))
-        weave.add(1.6, 2, Lachisis::Event.new('great-pillar', { pan: :present, sync: :present }))
-        weave.add(1.9, 0, Lachisis::Event.new('kitchen', { sync: :arrive }))
 
-        weave.propagate!
+      context 'using :arrive' do
+        before do
+          weave.add(1.6, 1, Lachisis::Event.new('pans-house', { pan: :present }))
+          weave.add(1.6, 2, Lachisis::Event.new('great-pillar', { pan: :present, sync: :present }))
+          weave.add(1.7, 0, Lachisis::Event.new('elsewhere', { random: :depart }))
+          weave.add(1.9, 0, Lachisis::Event.new('kitchen', { sync: :arrive }))
+
+          weave.propagate!
+        end
+
+        specify 'puts them in the frame they were in most recently' do
+          epilogues = weave.frames.last.events.sort_by(&:location)
+
+          expect(epilogues.map(&:location)).to eq(%w[ great-pillar kitchen ])
+          pillar, kitchen = *epilogues
+
+          expect(pillar.characters).to eq(Set[:pan])
+          expect(kitchen.characters).to eq(Set[:sync])
+        end
       end
 
-      specify 'puts them in the frame they were in most recently' do
-        epilogues = weave.frames.last.events.sort_by(&:location)
+      context 'using :present' do
+        before do
+          weave.add(0, 0, Lachisis::Event.new('A', { alice: :enter }))
+          weave.add(0, 1, Lachisis::Event.new('A', { bob: :present }))
+          weave.add(0, 2, Lachisis::Event.new('B', { bob: :present }))
 
-        expect(epilogues.map(&:location)).to eq(%w[ great-pillar kitchen ])
-        pillar, kitchen = *epilogues
+          weave.propagate!
+        end
 
-        expect(pillar.characters).to eq(Set[:pan])
-        expect(kitchen.characters).to eq(Set[:sync])
+        specify 'puts them in the frame they were in most recently' do
+          middle_events = weave.frames[1].events.sort_by(&:location)
+
+          expect(middle_events.map(&:location)).to eq(['A'])
+          at_a = middle_events.first
+
+          expect(at_a.characters).to eq(Set[:alice, :bob])
+        end
       end
     end
   end

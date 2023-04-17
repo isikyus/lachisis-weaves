@@ -49,7 +49,8 @@ module Lachisis
       end
 
       location_order, characters = @layout.layout(weave)
-      $stderr.puts "Crossing number: #{Layout::Crossings.count(weave, location_order, characters).total}"
+      # TODO: turned off for now as crossing calculation makes assumptions about propogation that don't hold.
+      #$stderr.puts "Crossing number: #{Layout::Crossings.count(weave, location_order, characters).total}"
       $stderr.puts "Location order: #{location_order.inspect}"
 
       # TODO: could use Nokogiri here

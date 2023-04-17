@@ -99,24 +99,23 @@ module Lachisis
     def propagate!
       # Cache a copy of thread data since we're about to modify the records it's based on
       threads_before = threads
-
       frames.each do |frame|
         threads_before.each do |character, thread|
           # TODO: could do this more efficiently if the type expressed that these were in order
+          next_appearence = thread.detect { |e| e.timestamp > frame.timestamp }
           last_appearence = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
 
           if last_appearence && frame.events.include?(last_appearence.event)
             # Nothing to do - we already know where this person is
-          elsif last_appearence
+          elsif next_appearence && next_appearence.present?(character)
+            # Assume they go immediately to where we see them next
+            add_with_timestamp(frame.timestamp, Lachisis::Event.new(next_appearence.event.location, character => :present))
+          elsif last_appearence && last_appearence.remain?(character)
             # Still in the same place they were before
             add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, character => :present))
-          elsif thread.any?
-            # Before start of thread; assume they're where we first see them
-            add_with_timestamp(frame.timestamp, Lachisis::Event.new(thread.first.event.location, character => :present))
           else
-            raise "Thread for #{character} exists but is empty. This should not happen."
+            # No idea where they were; we can't propogate anything.
           end
-
         end
       end
     end

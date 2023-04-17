@@ -87,11 +87,11 @@ RSpec.describe Lachisis::Weave do
         weave.add(10, 0, Lachisis::Event.new('delphi', { sue: :present }))
         weave.add(20, 0, Lachisis::Event.new('delphi', { alice: :arrive, oracle: :present }))
         weave.add(20, 5, Lachisis::Event.new('home', { alice: :arrive, cathy: :present, sue: :arrive }))
-
-        weave.propagate!
       end
 
       specify 'assumes people stay in place after their last event' do
+        weave.propagate!
+
         end_at_delphi, end_at_home, *rest = *weave.frames.last.events.sort_by(&:location)
 
         expect(rest).to be_empty
@@ -103,7 +103,9 @@ RSpec.describe Lachisis::Weave do
         expect(end_at_home.characters).to eq Set[:alice, :bob, :cathy, :sue]
       end
 
-      specify 'assumes people were there before their first event' do
+      specify 'assumes people were there before their first "present" event' do
+        weave.propagate!
+
         start_at_delphi, start_at_home, *rest = *weave.frames.first.events.sort_by(&:location)
 
         expect(rest).to be_empty
@@ -115,7 +117,29 @@ RSpec.describe Lachisis::Weave do
         expect(start_at_home.characters).to eq Set[:alice, :bob, :cathy]
       end
 
-      specify 'between events at different locations, assumes people stay at their old location' do
+      specify 'between events at different locations, assumes people travel to their next "present" location' do
+        weave.frames.last.events.first.actions[:sue] = :present
+        weave.propagate!
+
+        middle_frame = weave.frames[1]
+        expect(middle_frame.timestamp.major).to eq 20
+        expect(middle_frame.timestamp.minor).to eq 0
+
+        middle_at_delphi, middle_at_home, *rest = *middle_frame.events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(middle_at_delphi.location).to eq 'delphi'
+        expect(middle_at_delphi.characters).to eq Set[:oracle, :alice]
+
+        expect(middle_at_home.location).to eq 'home'
+        expect(middle_at_home.characters).to eq Set[:bob, :cathy, :sue]
+      end
+
+      specify 'between events at different locations, assumes people do not yet travel to an "arrive" location' do
+        weave.frames.last.events.first.actions[:sue] = :arrive
+        weave.propagate!
+
         middle_frame = weave.frames[1]
         expect(middle_frame.timestamp.major).to eq 20
         expect(middle_frame.timestamp.minor).to eq 0
@@ -129,6 +153,55 @@ RSpec.describe Lachisis::Weave do
 
         expect(middle_at_home.location).to eq 'home'
         expect(middle_at_home.characters).to eq Set[:bob, :cathy]
+      end
+    end
+
+    context 'with "arrive" events rather than "present"' do
+      specify 'does not assume they were there before their first event' do
+        weave.add(20, 0, Lachisis::Event.new('delphi', { alice: :arrive }))
+        weave.add(20, 5, Lachisis::Event.new('home', { alice: :arrive, sue: :arrive }))
+
+        weave.propagate!
+
+        start_at_delphi, *rest = *weave.frames.first.events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(start_at_delphi.location).to eq 'delphi'
+        expect(start_at_delphi.characters).to eq Set[:alice]
+      end
+    end
+
+    context 'with explicit "depart" or "die" events' do
+      before do
+        weave.add(20, 0, Lachisis::Event.new('delphi', { pythia: :die, hercules: :depart, apollo: :present }))
+        weave.add(20, 5, Lachisis::Event.new('olympus', { apollo: :arrive }))
+
+        # Not propogating here as one test needs extra following events
+      end
+
+      specify 'does not assume characters remain at their last known location' do
+        weave.propagate!
+
+        at_olympus, *rest = *weave.frames[1].events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(at_olympus.location).to eq 'olympus'
+        expect(at_olympus.characters).to eq Set[:apollo]
+      end
+
+      specify 'does not infer location between a departure and subsequent arrival' do
+        weave.add(30, 0, Lachisis::Event.new('hades', { pythia: :arrive, hercules: :arrive, apollo: :arrive }))
+
+        weave.propagate!
+
+        at_olympus, *rest = *weave.frames[1].events.sort_by(&:location)
+
+        expect(rest).to be_empty
+
+        expect(at_olympus.location).to eq 'olympus'
+        expect(at_olympus.characters).to eq Set[:apollo]
       end
     end
 

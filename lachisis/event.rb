@@ -1,6 +1,20 @@
 module Lachisis
   class Event
+    # Indicate the character was already at a place when the story reached them.
+    PRESENT = [:present]
+
+    # Indicate the character arrived with the story (wasn't previously at the place we see them)
+    ARRIVE = [:arrive, :enter]
+
+    # Indicate this is a character's last appearence in a location
+    DEPART = [:depart, :die]
+
+    ACTION_TYPES = PRESENT + ARRIVE + DEPART
+
     def initialize(location, actions)
+      invalid_types = actions.values.uniq - ACTION_TYPES
+      raise "Invalid actions: #{invalid_types.inspect}" if invalid_types.any?
+
       @location = location
       @actions = actions
     end
@@ -14,6 +28,16 @@ module Lachisis
 
     def actions= actions
       @actions = actions
+    end
+
+    # Was a character present for the _start_ of this event?
+    def present?(character)
+      PRESENT.include?(@actions[character])
+    end
+
+    # Was a character present at the end of this event?
+    def remain?(character)
+      !DEPART.include?(@actions[character])
     end
 
     def inspect
@@ -62,5 +86,13 @@ module Lachisis
     end
 
     attr_reader :timestamp, :event
+
+    def present?(char)
+      event.present?(char)
+    end
+
+    def remain?(char)
+      event.remain?(char)
+    end
   end
 end

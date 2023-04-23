@@ -108,12 +108,55 @@ module Lachisis
           y += character_row * THREAD_SPACING
 
           last_location = event.location
-          [x, y, x + BASE_DURATION, y]
+          [
+            [x, y],
+            [x + BASE_DURATION, y]
+          ]
         end
 
-        xml_data << %{<path id="thread_#{character}" fill="none" stroke="black" stroke_width="3" d="M #{path_points.join(' ')}"/>}
+        # Simplify path to make relabelling easier
+        before = path_points.length
+        relevant_points = path_points.each_cons(3).map do |p0, p1, p2|
+          # TODO: this would be more correct if I could avoid the singularity for slope=0, but may mess up character locations if they have too much vertical movement
+          #dx0 = p0[0] - p1[0]
+          #dy0 = p0[1] - p1[1]
+          #slope0 = dy0/dx0.to_f
 
-        start_x, start_y, *, end_x, end_y = *path_points
+          #dx1 = p1[0] - p2[0]
+          #dy1 = p1[1] - p2[1]
+          #slope1 = dy1/dx1.to_f
+
+          #ratio = slope0 / slope1
+
+          #$stderr.puts([p0, p1, p2, dx0, dy0, slope0, dx1, dy1, slope1, ratio].inspect)
+
+          #if 0.9 < ratio && ratio < 1.1 # points are roughly collinear
+          #  nil
+          #else
+          #  p1
+          #end
+
+          # Only consider collinear if the line is horizontal (all same y)
+          if p0[1] == p1[1] && p1[1] == p2[1]
+            nil
+          else
+            p1
+          end
+        end
+        path_points = [
+          path_points.first,
+          *relevant_points.compact,
+          path_points.last
+        ]
+        $stderr.puts "Before simplify: #{before}; after : #{path_points.length}; change: #{before - path_points.length}"
+
+        #relabel_offset = (relabel_offset * PHI) % RELABEL_INTERVAL
+        #distance_until_relabel = RELABEL_INTERVAL - relabel_offset
+        #last_point = nil
+
+        xml_data << %{<path id="thread_#{character}" fill="none" stroke="black" stroke_width="3" d="M #{path_points.flatten.join(' ')}"/>}
+
+        start_x, start_y, *, end_x, end_y = *path_points.flatten
         xml_data << %{<text x="#{start_x - LABEL_OFFSET}" y="#{start_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
         xml_data << %{<text x="#{end_x + LABEL_OFFSET}" y="#{end_y}" text-anchor="start" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
       end

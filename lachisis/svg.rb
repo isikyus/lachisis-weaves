@@ -126,25 +126,6 @@ module Lachisis
         # Simplify path to make relabelling easier
         before = path_points.length
         relevant_points = path_points.each_cons(3).map do |p0, p1, p2|
-          # TODO: this would be more correct if I could avoid the singularity for slope=0, but may mess up character locations if they have too much vertical movement
-          #dx0 = p0[0] - p1[0]
-          #dy0 = p0[1] - p1[1]
-          #slope0 = dy0/dx0.to_f
-
-          #dx1 = p1[0] - p2[0]
-          #dy1 = p1[1] - p2[1]
-          #slope1 = dy1/dx1.to_f
-
-          #ratio = slope0 / slope1
-
-          #$stderr.puts([p0, p1, p2, dx0, dy0, slope0, dx1, dy1, slope1, ratio].inspect)
-
-          #if 0.9 < ratio && ratio < 1.1 # points are roughly collinear
-          #  nil
-          #else
-          #  p1
-          #end
-
           # Only consider collinear if the line is horizontal (all same y)
           if p0[1] == p1[1] && p1[1] == p2[1]
             nil

@@ -55,6 +55,7 @@ module Lachisis
           raise "Invalid update: expected x:y, got \"#{update}\""
         end
 
+        action_strings = Event::ACTION_TYPES.map(&:to_s)
         case event
         when 'time'
           times << value.to_f
@@ -64,11 +65,13 @@ module Lachisis
           location = value
           existing_actions = {}
 
-        when 'enter', 'present'
+        when *action_strings
           new_actions[value.to_sym] = event.to_sym
 
         else
-          raise "Unknown update type #{update}"
+          raise "Unknown update type #{update}. Expected 'time:<value>'," \
+                "'location:<name>', or <event>:<char> " \
+                "where <event> is one of these: #{action_strings.join(', ')}"
         end
       end
 

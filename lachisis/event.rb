@@ -7,7 +7,7 @@ module Lachisis
     ARRIVE = [:arrive, :enter]
 
     # Indicate this is a character's last appearence in a location
-    DEPART = [:depart, :die]
+    DEPART = [:depart, :exit, :die]
 
     ACTION_TYPES = PRESENT + ARRIVE + DEPART
 

@@ -173,10 +173,10 @@ module Lachisis
             label_x = (x0 + x1) / 2.0
             label_y = (y0 + y1) / 2.0
 
-            line_angle = -Math.atan((x1 - x0) / (y1 - y0).to_f)
+            line_angle = Math.atan((y1 - y0) / (x1 - x0).to_f)
 
             # Rotate 90 degrees to ???
-            label_angle = line_angle + (Math::PI / 2)
+            label_angle = line_angle
             label_angle_degrees = 360 * label_angle / (2 * Math::PI)
             xml_data << %{<text x="#{label_x}" y="#{label_y}" transform="rotate(#{label_angle_degrees} #{label_x} #{label_y})" text-anchor="middle" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
 

@@ -28,13 +28,13 @@
 <text x="87" y="258" text-anchor="end" dominant-baseline="middle" font-size="6">wildflower</text>
 <text x="298" y="204" text-anchor="start" dominant-baseline="middle" font-size="6">wildflower</text>
 <text x="147.5" y="108.0" transform="rotate(0.0 147.5 108.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">jethan</text>
-<text x="252.5" y="36.0" transform="rotate(95.9468630539735 252.5 36.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">jethan</text>
+<text x="252.5" y="36.0" transform="rotate(-84.05313694602651 252.5 36.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">jethan</text>
 <path id="thread_jethan_0" fill="none" stroke="black" stroke_width="3" d="M 90 246 100 246 105 168 115 168 120 108 129.5 108.0"/>
 <path id="thread_jethan_1" fill="none" stroke="black" stroke_width="3" d="M 165.5 108.0 175 108 180 150 220 150 225 84 235 84 240 60 250 60 250.63509048332978 53.903131360033996"/>
 <path id="thread_jethan_2" fill="none" stroke="black" stroke_width="3" d="M 254.3649095166702 18.096868639966 255 12 280 12 285 24 295 24"/>
 <text x="87" y="246" text-anchor="end" dominant-baseline="middle" font-size="6">jethan</text>
 <text x="298" y="24" text-anchor="start" dominant-baseline="middle" font-size="6">jethan</text>
-<text x="267.5" y="147.0" transform="rotate(91.11024434322053 267.5 147.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">pan</text>
+<text x="267.5" y="147.0" transform="rotate(-88.88975565677947 267.5 147.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">pan</text>
 <path id="thread_pan_0" fill="none" stroke="black" stroke_width="3" d="M 90 276 265 276 267.3256141400549 155.99831037316736"/>
 <path id="thread_pan_1" fill="none" stroke="black" stroke_width="3" d="M 267.6743858599451 138.00168962683264 270 18 280 18 285 36 295 36"/>
 <text x="87" y="276" text-anchor="end" dominant-baseline="middle" font-size="6">pan</text>
@@ -57,12 +57,12 @@
 <path id="thread_thane_the_elder_0" fill="none" stroke="black" stroke_width="3" d="M 90 60 235 60 240 66 250 66 255 18 265 18 270 24 280 24 285 42 295 42"/>
 <text x="87" y="60" text-anchor="end" dominant-baseline="middle" font-size="6">thane_the_elder</text>
 <text x="298" y="42" text-anchor="start" dominant-baseline="middle" font-size="6">thane_the_elder</text>
-<text x="282.5" y="63.0" transform="rotate(93.17983011986425 282.5 63.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">delph</text>
+<text x="282.5" y="63.0" transform="rotate(-86.82016988013577 282.5 63.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">delph</text>
 <path id="thread_delph_0" fill="none" stroke="black" stroke_width="3" d="M 120 102 220 102 225 108 280 108 281.6679497056621 77.97690529808119"/>
 <path id="thread_delph_1" fill="none" stroke="black" stroke_width="3" d="M 283.3320502943378 48.02309470191881 285 18 295 18"/>
 <text x="117" y="102" text-anchor="end" dominant-baseline="middle" font-size="6">delph</text>
 <text x="298" y="18" text-anchor="start" dominant-baseline="middle" font-size="6">delph</text>
-<text x="282.5" y="72.0" transform="rotate(93.40644375499473 282.5 72.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">lyssa_thane</text>
+<text x="282.5" y="72.0" transform="rotate(-86.59355624500529 282.5 72.0)" text-anchor="middle" dominant-baseline="middle" font-size="6">lyssa_thane</text>
 <path id="thread_lyssa_thane_0" fill="none" stroke="black" stroke_width="3" d="M 120 114 175 114 180 108 220 108 225 114 280 114 280.5391848805209 104.94169400724896"/>
 <path id="thread_lyssa_thane_1" fill="none" stroke="black" stroke_width="3" d="M 284.4608151194791 39.05830599275104 285 30 295 30"/>
 <text x="117" y="114" text-anchor="end" dominant-baseline="middle" font-size="6">lyssa_thane</text>

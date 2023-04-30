@@ -61,18 +61,24 @@ module Lachisis
     # @return [#to_proc]
     def render(weave, options)
       if options.svg
-        @layout ||= Lachisis::Layout::SimulatedAnnealing.new
-        renderer = Lachisis::SVG.new(@layout)
-        renderer.call(weave)
-
+        render_svg(weave)
       else
-        @render_result = ''
-        weave.frames.each do |frame|
-          frame.events.each do |event|
-            @render_result << sprintf("%11s : %10s\n", frame.timestamp, event)
-          end
-        end
+        list_events(weave)
       end
+    end
+
+    def render_svg(weave)
+      @layout ||= Lachisis::Layout::SimulatedAnnealing.new
+      renderer = Lachisis::SVG.new(@layout)
+      renderer.call(weave)
+    end
+
+    def list_events(weave)
+      weave.frames.flat_map do |frame|
+        frame.events.map do |event|
+          sprintf("%11s : %10s\n", frame.timestamp, event)
+        end
+      end.join
     end
 
     def die(message, status: 1)

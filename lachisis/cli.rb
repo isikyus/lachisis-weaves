@@ -30,20 +30,21 @@ module Lachisis
 
     def parse_options
       options = Options.new
-      OptionParser.new do |opts|
-        opts.banner = "Usage: bundle exec ruby read_events.rb -s <file>.xml > <file.svg>"
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>"
 
         opts.on('-s', '--svg', 'Generate SVG output rather than text diagnostics') do
           options.svg = true
         end
-      end.parse!
+      end
+
+      parser.parse!
 
       # Filename is a non-option argument
       if ARGV.length == 1
         options[:xml_file] = ARGV[0]
       else
-        # TODO: get usage message from options parser
-        die("Usage: #{$0} [-s] [--] file.xml\n\n" \
+        die("#{parser.help} \n\n" \
             "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
       end
 

@@ -12,16 +12,8 @@ module Lachisis
 
     def run
       options = parse_options
-
-      # TODO: could move these three lines into Lachisis::Parser
-      sax_processor = Lachisis::Parser.new(&render_callback(options))
-      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
-      svg = sax_parser.parse(options[:xml_file])
-
-      raise "No result from SVG render" unless render_result
-
-      puts render_result
-
+      weave = weave_from_xml(options[:xml_file])
+      puts render(weave, options)
     rescue Lachisis::Parser::LineNumberAware::LocatedError => e
       die(e.message)
     end
@@ -51,30 +43,34 @@ module Lachisis
       options
     end
 
+    def weave_from_xml(filename)
+      weave = nil
+
+      # TODO: could move these two lines into Lachisis::Parser
+      sax_processor = Lachisis::Parser.new { |w| weave = w }
+      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
+      sax_parser.parse(filename)
+
+      raise 'Expected callback to set weave' unless weave
+
+      weave
+    end
+
     # @return [#to_proc]
-    def render_callback(options)
+    def render(weave, options)
       if options.svg
-        @render_result = nil
         @layout ||= Lachisis::Layout::SimulatedAnnealing.new
         renderer = Lachisis::SVG.new(@layout)
-        ->(weave) {
-          @render_result = renderer.call(weave)
-        }
+        renderer.call(weave)
 
       else
         @render_result = ''
-        ->(weave) {
-          weave.frames.each do |frame|
-            frame.events.each do |event|
-              @render_result << sprintf("%11s : %10s\n", frame.timestamp, event)
-            end
+        weave.frames.each do |frame|
+          frame.events.each do |event|
+            @render_result << sprintf("%11s : %10s\n", frame.timestamp, event)
           end
-        }
+        end
       end
-    end
-
-    def render_result
-      @render_result
     end
 
     def die(message, status: 1)

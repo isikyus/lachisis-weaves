@@ -7,20 +7,16 @@ require_relative 'parser/line_number_aware'
 
 module Lachisis
   class CLI
-    class Options < Struct.new(:svg)
+    class Options < Struct.new(:svg, :xml_file)
     end
 
     def run
       options = parse_options
 
-      # TODO: get usage message from option parser
-      die("Usage: #{$0} [-s] [--] file.xml\n\nExpected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}") unless ARGV.length == 1
-      xml_file = ARGV[0]
-
       # TODO: could move these three lines into Lachisis::Parser
       sax_processor = Lachisis::Parser.new(&render_callback(options))
       sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
-      svg = sax_parser.parse(xml_file)
+      svg = sax_parser.parse(options[:xml_file])
 
       raise "No result from SVG render" unless render_result
 
@@ -41,6 +37,15 @@ module Lachisis
           options.svg = true
         end
       end.parse!
+
+      # Filename is a non-option argument
+      if ARGV.length == 1
+        options[:xml_file] = ARGV[0]
+      else
+        # TODO: get usage message from options parser
+        die("Usage: #{$0} [-s] [--] file.xml\n\n" \
+            "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
+      end
 
       options
     end

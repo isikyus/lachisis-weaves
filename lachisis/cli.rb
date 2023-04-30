@@ -23,9 +23,11 @@ module Lachisis
     def parse_options
       options = Options.new
       parser = OptionParser.new do |opts|
-        opts.banner = "Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>"
+        opts.banner =
+          "Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>"
 
-        opts.on('-s', '--svg', 'Generate SVG output rather than text diagnostics') do
+        opts.on('-s', '--svg',
+                'Generate SVG output rather than text diagnostics') do
           options.svg = true
         end
       end

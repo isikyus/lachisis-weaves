@@ -3,7 +3,6 @@ module Lachisis
     # Wrapper around Nokogiri::XML::SAX parser that tracks the line
     # numbers of errors, since Nokogiri apparently doesn't.
     class LineNumberAware
-
       # Extend parser errors with the location in the file
       # the error occured.
       class LocatedError < Lachisis::Parser::Error

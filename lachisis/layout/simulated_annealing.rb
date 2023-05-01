@@ -3,7 +3,6 @@ require 'lachisis/layout/crossings'
 
 module Lachisis
   module Layout
-
     # Try to lay out a weave using simulated annealing.
     # Basically doesn't work at the moment.
     # This is on ice until I get a clearer idea of how to approach it.

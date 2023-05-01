@@ -3,6 +3,10 @@ require 'lachisis/layout/crossings'
 
 module Lachisis
   module Layout
+
+    # Try to lay out a weave using simulated annealing.
+    # Basically doesn't work at the moment.
+    # This is on ice until I get a clearer idea of how to approach it.
     class SimulatedAnnealing < AbstractLayout
       SAMPLES_PER_ITERATION = 100
       STARTING_TEMPERATURE = 200.0
@@ -22,13 +26,13 @@ module Lachisis
 
         log("Initial best score: #{best_score}")
 
-        while(temperature > 1)
+        while (temperature > 1)
           improvement = 0
 
           log("Temperature #{temperature}")
-          samples = SAMPLES_PER_ITERATION.times.map do |i|
+          samples = Array.new(SAMPLES_PER_ITERATION) do |i|
             swaps = find_swaps(best_locations, best_characters, best_score)
-              .map { |pair| pair.map(&:to_s) }
+                    .map { |pair| pair.map(&:to_s) }
             locs = best_score.apply_swap(best_locations, swaps[0])
             chars = best_score.apply_swap(best_characters, swaps[1])
             score = best_score.swap(*swaps)
@@ -52,7 +56,8 @@ module Lachisis
             best_characters = candidate[:chars]
           end
 
-          log("- improvement this round: #{improvement} (current favoured option is #{best_score.total})\n")
+          log("- improvement this round: #{improvement}" \
+              "(current favoured option is #{best_score.total})\n")
 
           # Decreasing exponentially is good for this, right?
           temperature *= COOLING_RATE
@@ -80,12 +85,10 @@ module Lachisis
       def find_swap(array, weighted_sets)
         symbolised_array = array.map(&:to_sym)
         all_pairs = symbolised_array
-          .permutation(2)
-          .map(&:to_set)
-          .to_a
+                    .permutation(2)
+                    .map(&:to_set)
+                    .to_a
         all_sets = all_pairs | weighted_sets.keys
-
-        a = array.dup
 
         set = sample_by_weights(all_sets, weighted_sets)
         set.to_a.sample(2, random: @random)
@@ -110,14 +113,15 @@ module Lachisis
         end
 
         unless sample
-          raise "No element found for weight #{weighted_index} / #{total_weight}" \
+          raise "No element found for weight " \
+                "#{weighted_index} / #{total_weight}" \
                 " (max weight reached was #{weight_so_far})"
         end
 
         sample
       end
 
-      def log msg
+      def log(msg)
         $stderr.puts(msg)
       end
     end

@@ -23,7 +23,7 @@ module Lachisis
 
     def parse_options
       options = Options.new
-      parser = OptionParser.new do |opts|
+      opt_parser = OptionParser.new do |opts|
         opts.banner =
           'Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>'
 
@@ -33,17 +33,21 @@ module Lachisis
         end
       end
 
-      parser.parse!
+      opt_parser.parse!
 
       # Filename is a non-option argument
-      if ARGV.length == 1
-        options[:xml_file] = ARGV[0]
-      else
-        die("#{parser.help} \n\n" \
-            "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
-      end
+      options[:xml_file] = filename_from_argv(usage: opt_parser.help)
 
       options
+    end
+
+    def filename_from_argv(usage:)
+      if ARGV.length == 1
+        ARGV[0]
+      else
+        die("#{usage} \n\n" \
+            "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
+      end
     end
 
     def weave_from_xml(filename)

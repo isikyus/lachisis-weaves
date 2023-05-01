@@ -5,15 +5,14 @@ module Lachisis
   # order, events at their time and location, and threads running through their
   # events.)
   module Layout
-
-    # Layout strategies, responsible for deciding what order to put locations
-    # and# characters in.
-    # Other layout is mostly forced by the structure of the diagram (frames in
-    # order, events at their time and location, and threads running through their
-    # events.)
-
+    # Superclass of layout strategies, responsible for deciding what order
+    # to put locations and characters in.
+    # Other layout is mostly forced by the structure of the diagram
+    # (frames in order, events at their time and location,
+    # and threads running through their events.)
     class AbstractLayout
-      def layout(weave)
+      # @param weave [Lachisis::Weave]
+      def layout(_weave)
         raise 'To be implemented by subclass'
       end
     end
@@ -32,6 +31,5 @@ module Lachisis
         ]
       end
     end
-
   end
 end

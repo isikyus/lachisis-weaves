@@ -7,8 +7,7 @@ require_relative 'parser/line_number_aware'
 
 module Lachisis
   class CLI
-    class Options < Struct.new(:svg, :xml_file)
-    end
+    Options = Struct.new(:svg, :xml_file)
 
     def run
       options = parse_options
@@ -24,7 +23,7 @@ module Lachisis
       options = Options.new
       parser = OptionParser.new do |opts|
         opts.banner =
-          "Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>"
+          'Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>'
 
         opts.on('-s', '--svg',
                 'Generate SVG output rather than text diagnostics') do
@@ -76,7 +75,7 @@ module Lachisis
     def list_events(weave)
       weave.frames.flat_map do |frame|
         frame.events.map do |event|
-          sprintf("%11s : %10s\n", frame.timestamp, event)
+          format("%11s : %10s\n", frame.timestamp, event)
         end
       end.join
     end

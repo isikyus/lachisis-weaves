@@ -8,43 +8,43 @@ require_relative 'parser/line_number_aware'
 module Lachisis
   # Wrapper to set up other classes for command-line use
   class CLI
-    Options = Struct.new(:svg, :xml_file)
+    def self.run
+      new.run
+    end
+
+    def initialize
+      option_parser.parse!
+
+      # Filename is a non-option argument
+      @xml_file = filename_from_argv
+    end
 
     def run
-      options = parse_options
-      weave = weave_from_xml(options[:xml_file])
-      puts render(weave, options)
+      weave = weave_from_xml(@xml_file)
+      puts render(weave)
     rescue Lachisis::Parser::LineNumberAware::LocatedError => e
       die(e.message)
     end
 
     private
 
-    def parse_options
-      options = Options.new
-      opt_parser = OptionParser.new do |opts|
+    def option_parser
+      @option_parser ||= OptionParser.new do |opts|
         opts.banner =
           'Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>'
 
         opts.on('-s', '--svg',
                 'Generate SVG output rather than text diagnostics') do
-          options.svg = true
+          @svg = true
         end
       end
-
-      opt_parser.parse!
-
-      # Filename is a non-option argument
-      options[:xml_file] = filename_from_argv(usage: opt_parser.help)
-
-      options
     end
 
-    def filename_from_argv(usage:)
+    def filename_from_argv
       if ARGV.length == 1
         ARGV[0]
       else
-        die("#{usage} \n\n" \
+        die("#{option_parser.help} \n\n" \
             "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
       end
     end
@@ -63,8 +63,8 @@ module Lachisis
     end
 
     # @return [#to_proc]
-    def render(weave, options)
-      if options.svg
+    def render(weave)
+      if @svg
         render_svg(weave)
       else
         list_events(weave)

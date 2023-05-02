@@ -6,7 +6,6 @@ require_relative 'parser'
 require_relative 'parser/line_number_aware'
 
 module Lachisis
-
   # Wrapper to set up other classes for command-line use
   class CLI
     Options = Struct.new(:svg, :xml_file)

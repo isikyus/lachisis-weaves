@@ -25,7 +25,7 @@ module Lachisis
 
         log("Initial best score: #{best_score}")
 
-        while (temperature > 1)
+        while temperature > 1
           improvement = 0
 
           log("Temperature #{temperature}")
@@ -112,7 +112,7 @@ module Lachisis
         end
 
         unless sample
-          raise "No element found for weight " \
+          raise 'No element found for weight ' \
                 "#{weighted_index} / #{total_weight}" \
                 " (max weight reached was #{weight_so_far})"
         end
@@ -121,7 +121,7 @@ module Lachisis
       end
 
       def log(msg)
-        $stderr.puts(msg)
+        warn(msg)
       end
     end
   end

@@ -51,13 +51,12 @@ module Lachisis
 
       def add_line_to_errors(filename, line_index, position)
         yield
-
       rescue Lachisis::Parser::Error => e
         # each_with_index uses 0-based indexing,
         # but we want 1-based for the human-readable line number
         line_number = line_index + 1
         raise LocatedError.new(filename, line_number, position, e)
-       end
+      end
     end
   end
 end

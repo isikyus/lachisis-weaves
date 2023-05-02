@@ -22,28 +22,42 @@ module Lachisis
 
       # @param filename_or_io [String,IO]
       def parse(filename_or_io)
-        if filename_or_io.is_a?(IO)
-          filename = '<input>'
-          io = filename_or_io
-        else
-          filename = filename_or_io
-          io = File.open(filename)
-        end
+        filename, io = name_and_io_from(filename_or_io)
 
         sax_parser = Nokogiri::XML::SAX::PushParser.new(@sax_document, filename)
 
         io.each_line.each_with_index do |line, line_number|
-          begin
+          add_line_to_errors(filename, line_number, io.pos) do
             sax_parser << line
-          rescue Lachisis::Parser::Error => e
-            # each_with_index uses 0-based indexing,
-            # but we want 1-based for the human-readable line number
-            raise LocatedError.new(filename, line_number + 1, io.pos, e)
           end
         end
 
         sax_parser.finish
       end
+
+      private
+
+      # @param [String, IO] IO object or string
+      # @return [Array<String, IO>] Name of the input,
+      #         and IO stream to actually read from.
+      def name_and_io_from(filename_or_io)
+        if filename_or_io.is_a?(IO)
+          ['<input>', filename_or_io]
+        else
+          filename = filename_or_io
+          [filename, File.open(filename)]
+        end
+      end
+
+      def add_line_to_errors(filename, line_index, position)
+        yield
+
+      rescue Lachisis::Parser::Error => e
+        # each_with_index uses 0-based indexing,
+        # but we want 1-based for the human-readable line number
+        line_number = line_index + 1
+        raise LocatedError.new(filename, line_number, position, e)
+       end
     end
   end
 end

@@ -6,71 +6,90 @@ require_relative 'parser'
 require_relative 'parser/line_number_aware'
 
 module Lachisis
+  # Wrapper to set up other classes for command-line use
   class CLI
-    class Options < Struct.new(:svg)
+    def self.run
+      new.run
+    end
+
+    def initialize
+      option_parser.parse!
+
+      # Filename is a non-option argument
+      @xml_file = filename_from_argv
     end
 
     def run
-      options = parse_options
-
-      # TODO: get usage message from option parser
-      die("Usage: #{$0} [-s] [--] file.xml\n\nExpected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}") unless ARGV.length == 1
-      xml_file = ARGV[0]
-
-      # TODO: could move these three lines into Lachisis::Parser
-      sax_processor = Lachisis::Parser.new(&render_callback(options))
-      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
-      svg = sax_parser.parse(xml_file)
-
-      raise "No result from SVG render" unless render_result
-
-      puts render_result
-
+      weave = weave_from_xml(@xml_file)
+      puts render(weave)
     rescue Lachisis::Parser::LineNumberAware::LocatedError => e
       die(e.message)
     end
 
     private
 
-    def parse_options
-      options = Options.new
-      OptionParser.new do |opts|
-        opts.banner = "Usage: bundle exec ruby read_events.rb -s <file>.xml > <file.svg>"
+    def option_parser
+      @option_parser ||= OptionParser.new do |opts|
+        opts.banner =
+              'Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>'
 
-        opts.on('-s', '--svg', 'Generate SVG output rather than text diagnostics') do
-          options.svg = true
+        opts.on('-s', '--svg',
+                'Generate SVG output rather than text diagnostics') do
+          @svg = true
         end
-      end.parse!
-
-      options
-    end
-
-    # @return [#to_proc]
-    def render_callback(options)
-      if options.svg
-        @render_result = nil
-        @layout ||= Lachisis::Layout::Sorted.new
-        renderer = Lachisis::SVG.new(@layout)
-        ->(weave) {
-          @render_result = renderer.call(weave)
-        }
-
-      else
-        @render_result = ''
-        ->(weave) {
-          @render_result << "Location order: #{weave.location_sorting.inspect}\n"
-          @render_result << "Character order: #{weave.character_sorting.inspect}\n"
-          weave.frames.each do |frame|
-            frame.events.each do |event|
-              @render_result << sprintf("%11s : %10s\n", frame.timestamp, event)
-            end
-          end
-        }
       end
     end
 
-    def render_result
-      @render_result
+    def filename_from_argv
+      if ARGV.length == 1
+        ARGV[0]
+      else
+        die("#{option_parser.help} \n\n" \
+            "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
+      end
+    end
+
+    def weave_from_xml(filename)
+      weave = nil
+
+      # TODO: could move these two lines into Lachisis::Parser
+      sax_processor = Lachisis::Parser.new { |w| weave = w }
+      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
+      sax_parser.parse(filename)
+
+      raise 'Expected callback to set weave' unless weave
+
+      weave
+    end
+
+    # @return [#to_proc]
+    def render(weave)
+      if @svg
+        render_svg(weave)
+      else
+        list_events(weave)
+      end
+    end
+
+    def render_svg(weave)
+      @layout ||= Lachisis::Layout::Sorted.new
+      renderer = Lachisis::SVG.new(@layout)
+      renderer.call(weave)
+    end
+
+    def list_events(weave)
+      lines = [
+        "Location order: #{weave.location_sorting.inspect}",
+        "Character order: #{weave.character_sorting.inspect}"
+      ]
+
+      lines += weave.frames.flat_map do |frame|
+        frame.events.map do |event|
+          format("%11s : %10s", frame.timestamp, event)
+        end
+      end
+
+      lines.join("\n")
     end
 
     def die(message, status: 1)

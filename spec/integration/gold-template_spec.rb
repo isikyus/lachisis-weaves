@@ -1,13 +1,15 @@
 require 'open3'
 
+
 RSpec.describe 'read_events.rb' do
   LACHISIS_PATH = File.dirname(File.dirname(__dir__))
 
-  def generate_with_args(*args)
+  def generate_with_args(*args, ruby_args: [])
     output, error, status = Open3.capture3(
       'bundle',
       'exec',
       'ruby',
+      *ruby_args,
       File.join(LACHISIS_PATH, 'read_events.rb'),
       *args
     )
@@ -28,7 +30,11 @@ RSpec.describe 'read_events.rb' do
       end
 
       specify 'generates a known-good layout' do
-        svg = generate_with_args('-s', 'spec/fixtures/kathrakopolis.xml')
+        svg = generate_with_args(
+          '-s', 'spec/fixtures/kathrakopolis.xml',
+          # This layout is only used in this one test since it's not currently useful.
+          ruby_args: ['-I.', '-r', 'lachisis/layout/simulated_annealing.rb']
+        )
         expect(svg).to eq(annealed_svg)
       end
     end

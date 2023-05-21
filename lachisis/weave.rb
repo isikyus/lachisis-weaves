@@ -8,8 +8,13 @@ module Lachisis
     class Frame < Struct.new(:timestamp, :events)
     end
 
+    attr_accessor :location_sorting
+    attr_accessor :character_sorting
+
     def initialize
       @events_by_time = {}
+      self.location_sorting = []
+      self.character_sorting = []
     end
 
     # View the weave as a sequence of "frames": time slices where one or more
@@ -37,6 +42,19 @@ module Lachisis
           end
         end
       end
+    end
+
+    # @return [Array<String>] Names of all locations in the weave
+    def locations
+      events.map(&:location).uniq
+    end
+
+    # @return [Array<String>] Names of all characters in the weave
+    def characters
+      events
+        .map(&:characters)
+        .inject(&:union)
+        .to_a
     end
 
     # Add an event to the weave at a given time, creating a new frame
@@ -101,6 +119,14 @@ module Lachisis
 
         end
       end
+    end
+
+    private
+
+    def events
+      @events_by_time
+        .values
+        .flat_map(&:to_a)
     end
   end
 end

@@ -38,7 +38,7 @@ module Lachisis
       def layout(weave)
         [
           apply_sorting(weave.locations, weave.location_sorting),
-          apply_sorting(weave.characters, weave.character_sorting),
+          apply_sorting(weave.characters, weave.character_sorting)
         ]
       end
 

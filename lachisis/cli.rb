@@ -31,7 +31,7 @@ module Lachisis
     def option_parser
       @option_parser ||= OptionParser.new do |opts|
         opts.banner =
-              'Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>'
+          'Usage: bundle exec ruby read_events.rb [-s] [--] <file.xml>'
 
         opts.on('-s', '--svg',
                 'Generate SVG output rather than text diagnostics') do
@@ -85,7 +85,7 @@ module Lachisis
 
       lines += weave.frames.flat_map do |frame|
         frame.events.map do |event|
-          format("%11s : %10s", frame.timestamp, event)
+          format('%11s : %10s', frame.timestamp, event)
         end
       end
 

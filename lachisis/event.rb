@@ -49,13 +49,12 @@ module Lachisis
     end
 
     def to_s
-      "At %15s : %s" % [
-        location,
-        actions
+      actions_string = actions
           .sort_by(&:first)
           .map { |c, a| "#{c}:#{a}" }
           .join(', ')
-      ]
+
+      "At %15s : %s" % [location, actions_string]
     end
   end
 

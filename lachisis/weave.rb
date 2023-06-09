@@ -106,16 +106,14 @@ module Lachisis
           next_appearence = thread.detect { |e| e.timestamp > frame.timestamp }
           last_appearence = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
 
-          if last_appearence && events_before.include?(last_appearence.event)
+          if events_before.include?(last_appearence&.event)
             # Nothing to do - we already know where this person is
-          elsif next_appearence && next_appearence.present?(character)
+          elsif next_appearence&.present?(character)
             # Assume they go immediately to where we see them next
             add_with_timestamp(frame.timestamp, Lachisis::Event.new(next_appearence.event.location, character => :present))
-          elsif last_appearence && last_appearence.remain?(character)
+          elsif last_appearence&.remain?(character)
             # Still in the same place they were before
             add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, character => :present))
-          else
-            # No idea where they were; we can't propogate anything.
           end
         end
       end

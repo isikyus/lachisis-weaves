@@ -97,25 +97,40 @@ module Lachisis
     # TODO: we can do better than this but it requires recording more
     # information about where people are when.
     def propagate!
-      # Cache a copy of thread data since we're about to modify the records it's based on
-      threads_before = threads
-      frames.each do |frame|
-        events_before = frame.events.dup
-        threads_before.each do |character, thread|
-          # TODO: could do this more efficiently if the type expressed that these were in order
-          next_appearence = thread.detect { |e| e.timestamp > frame.timestamp }
-          last_appearence = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
 
-          if events_before.include?(last_appearence&.event)
-            # Nothing to do - we already know where this person is
-          elsif next_appearence&.present?(character)
-            # Assume they go immediately to where we see them next
-            add_with_timestamp(frame.timestamp, Lachisis::Event.new(next_appearence.event.location, character => :present))
-          elsif last_appearence&.remain?(character)
-            # Still in the same place they were before
-            add_with_timestamp(frame.timestamp, Lachisis::Event.new(last_appearence.event.location, character => :present))
-          end
-        end
+      # Infer intermediate locations based on what we're given
+      # by the story
+      inferences = frames.flat_map do |frame|
+        threads.map do |character, thread|
+          # TODO: could do this more efficiently if the type expressed that these were in order
+          next_appearance = thread.detect { |e| e.timestamp >= frame.timestamp }
+          last_appearance = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
+
+          # If these are both non-nil they're this location;
+          # we already know where we are.
+          # If they're both nil, there are no locations to infer from
+          next if next_appearance == last_appearance
+
+          location =
+            if next_appearance&.present?(character)
+              next_appearance.event.location
+            elsif last_appearance&.remain?(character)
+              last_appearance.event.location
+            end
+
+          location && {
+            who: character,
+            where: location,
+            when: frame.timestamp
+          }
+        end.compact
+      end
+
+      inferences.each do |infer|
+        add_with_timestamp(
+          infer[:when],
+          Lachisis::Event.new(infer[:where], infer[:who] => :present)
+        )
       end
     end
 

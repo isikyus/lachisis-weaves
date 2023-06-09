@@ -50,9 +50,9 @@ module Lachisis
 
     def to_s
       actions_string = actions
-          .sort_by(&:first)
-          .map { |c, a| "#{c}:#{a}" }
-          .join(', ')
+                       .sort_by(&:first)
+                       .map { |c, a| "#{c}:#{a}" }
+                       .join(', ')
 
       "At %15s : %s" % [location, actions_string]
     end

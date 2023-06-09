@@ -1,13 +1,14 @@
 module Lachisis
   class Event
     # Indicate the character was already at a place when the story reached them.
-    PRESENT = [:present]
+    PRESENT = [:present].freeze
 
-    # Indicate the character arrived with the story (wasn't previously at the place we see them)
-    ARRIVE = [:arrive, :enter]
+    # Indicate the character arrived with the story; i.e. they weren't
+    # at this location prior to this event.
+    ARRIVE = %i[ arrive enter ].freeze
 
     # Indicate this is a character's last appearence in a location
-    DEPART = [:depart, :exit, :die]
+    DEPART = %i[ depart exit die ].freeze
 
     ACTION_TYPES = PRESENT + ARRIVE + DEPART
 

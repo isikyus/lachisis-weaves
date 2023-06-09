@@ -5,10 +5,10 @@ module Lachisis
 
     # Indicate the character arrived with the story; i.e. they weren't
     # at this location prior to this event.
-    ARRIVE = %i[ arrive enter ].freeze
+    ARRIVE = %i[arrive enter].freeze
 
     # Indicate this is a character's last appearence in a location
-    DEPART = %i[ depart exit die ].freeze
+    DEPART = %i[depart exit die].freeze
 
     ACTION_TYPES = PRESENT + ARRIVE + DEPART
 

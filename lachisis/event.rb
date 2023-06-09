@@ -20,16 +20,8 @@ module Lachisis
       @actions = actions
     end
 
-    attr_reader :location, :actions
-
     # TODO: would be nice if we were immutable
-    def location= location
-      @location = location
-    end
-
-    def actions= actions
-      @actions = actions
-    end
+    attr_accessor :location, :actions
 
     # Was a character present for the _start_ of this event?
     def present?(character)

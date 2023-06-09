@@ -102,22 +102,7 @@ module Lachisis
       # by the story
       inferences = frames.flat_map do |frame|
         threads.map do |character, thread|
-          # TODO: could do this more efficiently if the type expressed that these were in order
-          next_appearance = thread.detect { |e| e.timestamp >= frame.timestamp }
-          last_appearance = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
-
-          # If these are both non-nil they're this location;
-          # we already know where we are.
-          # If they're both nil, there are no locations to infer from
-          next if next_appearance == last_appearance
-
-          location =
-            if next_appearance&.present?(character)
-              next_appearance.event.location
-            elsif last_appearance&.remain?(character)
-              last_appearance.event.location
-            end
-
+          location = infer_location(thread, character, frame)
           location && {
             who: character,
             where: location,
@@ -135,6 +120,30 @@ module Lachisis
     end
 
     private
+
+    # Work out where the character covered by a given thread
+    # is in a particular frame, from surrounding location info.
+    #
+    # @return [Location,nil] nil if there is no location data to infer from,
+    #         or if inference is unnecessary (location already known for
+    #         this frame).
+    def infer_location(thread, character, frame)
+      # TODO: could do this more efficiently if the type expressed that these were in order
+      next_appearance = thread.detect { |e| e.timestamp >= frame.timestamp }
+      last_appearance = thread.reverse.detect { |e| e.timestamp <= frame.timestamp }
+
+      if next_appearance == last_appearance
+        # If these are both non-nil they're this location;
+        # we already know where we are.
+        # If they're both nil, there are no locations to infer from
+        nil
+
+      elsif next_appearance&.present?(character)
+        next_appearance.event.location
+      elsif last_appearance&.remain?(character)
+        last_appearance.event.location
+      end
+    end
 
     def events
       @events_by_time

@@ -19,7 +19,8 @@ tedious comments for me.
 So I read it myself, and logged the characters in each page by hand,
 then had my script draw out all the connecting lines.
 
-The resulting diagram is of course a spoiler for DMFA comics 1 to 101, so it's below the fold.
+The resulting diagram is of course a spoiler for DMFA comics 1 to 101,
+so it's below the fold.
 
 <!-- more -->
 
@@ -109,26 +110,26 @@ Measurement is pretty easy - go through the diagram and count the number of
 lines that cross.
 The fewer, the better.
 
-<aside>
-  So how do you actually count crossing lines?
-  It's obvious to a human,
-  but I can't just tell the program to look at the diagram.
+<!-- aside -->
+So how do you actually count crossing lines?
+It's obvious to a human,
+but I can't just tell the program to look at the diagram.
 
-  What I can do, though, is look at pairs of "frames"
-  (vertical events that happen at the same time),
-  and the characters in each one.
-  From the perspective of one character, say Mab, I can find all the
-  characters who are above and below me in the first frame
-  (this is easy with a sorted list).
-  Do the same for the second frame, and note characters who moved
-  from above to below me or vice versa.
-  Each of them has a line that crosses mine.
+What I can do, though, is look at pairs of "frames"
+(vertical events that happen at the same time),
+and the characters in each one.
+From the perspective of one character, say Mab, I can find all the
+characters who are above and below me in the first frame
+(this is easy with a sorted list).
+Do the same for the second frame, and note characters who moved
+from above to below me or vice versa.
+Each of them has a line that crosses mine.
 
-  If I do that for every character I end up counting all the crossings twice
-  (once from the perspective of each character involved).
-  But since it's _exactly_ twice this isn't a problem;
-  I can just halve the final number.
-</aside>
+If I do that for every character I end up counting all the crossings twice
+(once from the perspective of each character involved).
+But since it's _exactly_ twice this isn't a problem;
+I can just halve the final number.
+<!-- /aside -->
 
 With the aid of that, and some extra code to do things randomly,
 I can get an annealing-ish algorithm to run.
@@ -160,7 +161,7 @@ middle that have lots of vertical lines cutting across them.
 
 Let's have a go at that.
 
------------------------------------
+---------------------------
 
 Work continues.
 Moving lines that have the most crossings helps a little, but not enough.
@@ -170,7 +171,7 @@ that will be the next step.
 If that doesn't work I need to either look up simulated annealing and
 do it properly, or change tack and try one of my other back-pocket options.
 
-----------------------------------------
+---------------------------
 
 I've got swapping lines working now, but it has two problems.
 
@@ -256,11 +257,11 @@ There are two sorts of things I can do to fix this:
    there's no need to have the thread extend back to the beginning
    of time, and it certainly shouldn't continue past that scene.
 
------------------------------
+---------------------------
 
 OK, next step, try to speed it up.
 
-To start with let's try using https://github.com/ruby/profile
+To start with let's try using <https://github.com/ruby/profile>
 to find out what's so slow:
 
 Done that, and it's given me results starting with this
@@ -376,7 +377,7 @@ Crossing number: 25
 Location order: ["mile", "peak", "noble_quarter", "docks", "thanes_house", "great_pillar", "moon_pool", "wildflowers_house", "jethans_place", "travel-quarter", "pans-house", "labyrinth"]
 ```
 
--------------------
+---------------------------
 
 That's a pretty good speedup, but we're still talking close to 5 minutes to
 layout this graph --- and DMFA in full is well over two _thousand_ pages
@@ -434,8 +435,7 @@ stage, but I can see a couple of macro things that would help:
     hold off on this, or at least wait until I'm using a simpler shuffling
     algorithm (e.g. adjacent swaps only).
 
-
----------------
+---------------------------
 
 OK, after much fiddling around I've got code that updates the existing
 crossings count.
@@ -492,7 +492,7 @@ IDs) plus some sort orders, which might allow more efficient layout.
 Before I do that, though, let's see how far I can get with low-hanging
 micro-optimisations on this new algorithm.
 
---------------------------------
+---------------------------
 
 OK, I'm not getting very far.
 From commit fea6dd01333aaab7da59cad086d308675b95add4 it's apparent
@@ -548,7 +548,6 @@ Assume WLOG that L2 is drawn above L4.
 If L1 is above L3, the lines L2-L3 and L1-L4 cross.
 If L1 is below L3, then L2-L1 and L3-L4 cross,
 
-
 So far, so good.
 How would I go about proving this conjecture?
 Well, if it's true that crossings require cycles, then there should
@@ -594,7 +593,7 @@ My concern is that there might be a layout that causes a crossing like this
 within a cluster of locations,
 at which point I'm not sure it would still look neat.
 
-----------------
+---------------------------
 
 2023-04-10
 
@@ -661,7 +660,7 @@ That reasonably results in a layout order L1, L0, L2
 (or equivalently, L1, L2, L0).
 So far, so good.
 
---------------
+---------------------------
 
 Nope, the conjecture doesn't work.
 
@@ -693,7 +692,7 @@ up there would be crossed by Oberon's return.
     and we can construct a cycle going A->B (up), B->C (down),
     and so on that cannot be ordered.
 
----------------
+---------------------------
 
 OK, none of this is getting me anywhere.
 Let's set it aside for now, and try something that doesn't involve

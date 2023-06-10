@@ -280,7 +280,13 @@ module Lachisis
       # @param first_location_index [Integer]
       # @param second_location [String]
       # @param second_location_index [Integer]
-      def update_crossings_with_swap(crossings, locs, chars, first_location, first_location_index, second_location, second_location_index)
+      def update_crossings_with_swap(crossings,
+                                     locs,
+                                     chars,
+                                     first_location,
+                                     first_location_index,
+                                     second_location,
+                                     second_location_index)
         # Ensure the first location is earlier in order (makes some comparisons later simpler)
         if first_location_index > second_location_index
           first_location, second_location = second_location, first_location
@@ -393,14 +399,16 @@ module Lachisis
 
               _char, destination2, index2 = *leaving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
 
-              if index1 < index2 # Character arriving at the previously-higher location left from a higher destination
-                crossing = Crossing.new(
-                  [char1, char2],
-                  [event1.location, event2.location],
-                  [destination1.location, destination2.location]
-                )
-                new_arriving << crossing
-              end
+              next unless index1 < index2
+
+              # Character arriving at the previously-higher
+              # location left from a higher destination
+              crossing = Crossing.new(
+                [char1, char2],
+                [event1.location, event2.location],
+                [destination1.location, destination2.location]
+              )
+              new_arriving << crossing
             end
           end
 

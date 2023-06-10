@@ -1,15 +1,14 @@
-module Lachisis
+# frozen_string_literal: true
 
+module Lachisis
   # The full history of a story, including all events and
   # character threads.
   class Weave
-
     # All the events happening at a specific point in time.
     class Frame < Struct.new(:timestamp, :events)
     end
 
-    attr_accessor :location_sorting
-    attr_accessor :character_sorting
+    attr_accessor :location_sorting, :character_sorting
 
     def initialize
       @events_by_time = {}
@@ -97,7 +96,6 @@ module Lachisis
     # TODO: we can do better than this but it requires recording more
     # information about where people are when.
     def propagate!
-
       # Infer intermediate locations based on what we're given
       # by the story
       inferences = frames.flat_map do |frame|

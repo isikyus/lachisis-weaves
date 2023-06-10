@@ -10,8 +10,7 @@ module Lachisis
 
   # Parses Lachisis processing instructions from XML
   class Parser < Nokogiri::XML::SAX::Document
-
-    # Wrapper for XML aprsing errors
+    # Wrapper for XML parsing errors
     class Error < StandardError
       def initialize(message)
         super("XML parse error: #{message}")
@@ -82,8 +81,8 @@ module Lachisis
 
       if times.any?
         raise "Invalid processing instruction #{content}: need location" unless location
-        @minor_time = 0
 
+        @minor_time = 0
         times.sort.each do |t|
           event ||= Event.new(location, {})
           event.actions.merge!(new_actions)
@@ -116,12 +115,12 @@ module Lachisis
       end
 
       case type
-        when 'sort-locations'
-          @weave.location_sorting = regexes
-        when 'sort-characters'
-          @weave.character_sorting = regexes
-        else
-          raise "Unknown sorting hint type #{type}"
+      when 'sort-locations'
+        @weave.location_sorting = regexes
+      when 'sort-characters'
+        @weave.character_sorting = regexes
+      else
+        raise "Unknown sorting hint type #{type}"
       end
     end
 

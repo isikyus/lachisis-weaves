@@ -7,3 +7,8 @@ plugins:
     enabled: true
   markdownlint:
     enabled: true
+
+exclude_patterns:
+  # Ignoring for now as it's not actually
+  # useful so churn should be minimal.
+  - 'lachisis/layout/crossings.rb'

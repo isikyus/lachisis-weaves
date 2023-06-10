@@ -21,6 +21,8 @@ module Lachisis
     INITIAL = -1000
 
     def initialize(&callback)
+      super
+
       @major_time = 0
       @minor_time = 0
       @weave = Weave.new
@@ -47,7 +49,7 @@ module Lachisis
 
       updates = content.strip.split(/\s+/)
 
-      if ['sort-locations', 'sort-characters'].include?(updates[0])
+      if %w[sort-locations sort-characters].include?(updates[0])
         sorting_hint(*updates)
         return
       end

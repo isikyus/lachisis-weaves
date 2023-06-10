@@ -88,7 +88,9 @@ module Lachisis
 
       lines += weave.frames.flat_map do |frame|
         frame.events.map do |event|
-          format('%11s : %10s', frame.timestamp, event)
+          format('%<time>11s : %<event>10s',
+                 time: frame.timestamp,
+                 event: event)
         end
       end
 

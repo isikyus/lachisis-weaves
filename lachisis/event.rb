@@ -38,7 +38,7 @@ module Lachisis
     end
 
     def inspect
-      "<Event#{__id__}: #{to_s}>"
+      "<Event#{__id__}: #{self}>"
     end
 
     def characters
@@ -51,7 +51,7 @@ module Lachisis
                        .map { |c, a| "#{c}:#{a}" }
                        .join(', ')
 
-      "At %15s : %s" % [location, actions_string]
+      "At %<loc>15s : %<acts>s" % { loc: location, acts: actions_string }
     end
   end
 
@@ -77,11 +77,11 @@ module Lachisis
       end
 
       def to_s
-        '%5s %5s' % [major, minor]
+        '%<maj>5s %<min>5s' % { maj: major, min: minor }
       end
 
       def inspect
-        "<#Timestamp #{to_s}>"
+        "<#Timestamp #{self}>"
       end
     end
 

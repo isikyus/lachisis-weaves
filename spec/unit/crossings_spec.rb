@@ -1,5 +1,5 @@
 require 'lachisis/event'
-require 'lachisis/layout'
+require 'lachisis/layout/crossings'
 require 'lachisis/weave'
 
 RSpec.describe Lachisis::Layout::Crossings do

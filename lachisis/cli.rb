@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'nokogiri'
 require 'optparse'
 
@@ -6,6 +8,8 @@ require_relative 'parser'
 require_relative 'parser/line_number_aware'
 
 module Lachisis
+  # Recognises command-line options and args and
+  # runs the appropriate bits of Lachisis code
   class CLI
     class Options < Struct.new(:svg)
     end

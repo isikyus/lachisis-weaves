@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'nokogiri'
 
 require_relative 'event'
@@ -6,7 +8,10 @@ require_relative 'weave'
 module Lachisis
   NAMESPACE = 'lachisis'
 
+  # Parses Lachisis processing instructions from XML
   class Parser < Nokogiri::XML::SAX::Document
+
+    # Wrapper for XML aprsing errors
     class Error < StandardError
       def initialize(message)
         super("XML parse error: #{message}")

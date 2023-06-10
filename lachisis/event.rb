@@ -1,4 +1,9 @@
+# frozen_string_literal: true
+
 module Lachisis
+
+  # An event, without the context of a specific time.
+  # Records only which characters were present/arriving/leaving
   class Event
     # Indicate the character was already at a place when the story reached them.
     PRESENT = [:present].freeze
@@ -51,7 +56,17 @@ module Lachisis
     end
   end
 
+  # Wraps an event and adds time inforation:
+  # when all this happened
   class TimedEvent
+
+    # Represent the time an event happened.
+    # This has two parts: the major timestamp
+    # is the time explicitly set in the input
+    # (for time jumps etc.), while the minor
+    # timestamp measures the ordinary, linear
+    # passage of time from sentenece to sentence
+    # or (comic) frame to frame.
     class Timestamp < Struct.new(:major, :minor)
       include Comparable
 

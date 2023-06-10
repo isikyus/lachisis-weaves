@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lachisis
   # Layout strategies, responsible for deciding what order to put locations
   # and# characters in.
@@ -8,6 +10,8 @@ module Lachisis
 
     # Finds threads that cross over with a given layout
     class Crossings
+      # A set of characters that cross, and where
+      # they go from and to to cause the crossing
       class Crossing
         def initialize(characters, old_locations, new_locations)
           @characters = characters.map(&:to_sym).to_set

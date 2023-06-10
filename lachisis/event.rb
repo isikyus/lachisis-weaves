@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Lachisis
-
   # An event, without the context of a specific time.
   # Records only which characters were present/arriving/leaving
   class Event
@@ -59,7 +58,6 @@ module Lachisis
   # Wraps an event and adds time inforation:
   # when all this happened
   class TimedEvent
-
     # Represent the time an event happened.
     # This has two parts: the major timestamp
     # is the time explicitly set in the input

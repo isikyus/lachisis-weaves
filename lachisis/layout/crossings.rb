@@ -1,6 +1,11 @@
+# frozen_string_literal: true
+
 module Lachisis
   module Layout
+    # Finds threads that cross over with a given layout
     class Crossings
+      # A set of characters that cross, and where
+      # they go from and to to cause the crossing
       class Crossing
         def initialize(characters, old_locations, new_locations)
           @characters = characters.map(&:to_sym).to_set
@@ -45,7 +50,8 @@ module Lachisis
       end
 
       def calculate_crossings!
-        raise "Should only calculate crossings once, at initialisation" if @crossings
+        raise 'Should only calculate crossings once, at initialisation' if @crossings
+
         @crossings = []
 
         # TODO: better not to do this calculation in #initialize?
@@ -92,7 +98,15 @@ module Lachisis
             first_loc = new_locs[first]
             last_loc = new_locs[last]
             new_locs[first], new_locs[last] = new_locs[last], new_locs[first]
-            new_crossings = update_crossings_with_swap(new_crossings, new_locs, new_chars, first_loc, first, last_loc, last)
+            new_crossings = update_crossings_with_swap(
+              new_crossings,
+              new_locs,
+              new_chars,
+              first_loc,
+              first,
+              last_loc,
+              last
+            )
           end
         end
 
@@ -102,7 +116,13 @@ module Lachisis
             first_char = new_chars[first]
             last_char = new_chars[last]
             new_chars[first], new_chars[last] = new_chars[last], new_chars[first]
-            new_crossings = update_crossings_with_char_swap(new_crossings, new_locs, new_chars, first_char, last_char)
+            new_crossings = update_crossings_with_char_swap(
+              new_crossings,
+              new_locs,
+              new_chars,
+              first_char,
+              last_char
+            )
           end
         end
 
@@ -120,14 +140,12 @@ module Lachisis
       def apply_swap(list, swap)
         if swap
           result = list.dup
-
           raise ArgumentError, 'Can only swap 2 things' unless swap.length == 2
-          i1, i2 = *swap.map { |loc| result.index(loc) }
 
+          i1, i2 = *swap.map { |loc| result.index(loc) }
           raise ArgumentError, 'entries must exist in array' unless i1 && i2
 
           result[i1], result[i2] = result[i2], result[i1]
-
           result
         else
           list
@@ -141,14 +159,14 @@ module Lachisis
 
       def by_character
         @by_character ||= @crossings
-          .group_by(&:both_characters)
-          .transform_values(&:length)
+                          .group_by(&:both_characters)
+                          .transform_values(&:length)
       end
 
       def by_location
         @by_location ||= @crossings
-          .group_by(&:all_locations)
-          .transform_values(&:length)
+                         .group_by(&:all_locations)
+                         .transform_values(&:length)
       end
 
       def to_s
@@ -159,11 +177,11 @@ module Lachisis
 
       protected
 
-      def crossings=new_crossings
-        raise "Should only set crossings once, at initialisation" if @crossings
+      def crossings=(new_crossings)
+        raise 'Should only set crossings once, at initialisation' if @crossings
+
         @crossings = new_crossings
       end
-
 
       private
 
@@ -192,11 +210,11 @@ module Lachisis
         crossing_chars = can_cross.flat_map do |char|
           was = from.index(char)
           was_below = from[0...was] # Graphics! Y-axis increases going down
-          was_above = from[(was+1)..-1]
+          was_above = from[(was + 1)..]
 
           now = to.index(char)
           now_below = to[0...now]
-          now_above = to[(now+1)..-1]
+          now_above = to[(now + 1)..]
 
           others = (was_below & now_above) + (was_above & now_below)
           others.map { |o| [char, o] }
@@ -209,7 +227,6 @@ module Lachisis
 
         crossing_chars
       end
-
 
       # Given two list entries to swap, find a sequence of swaps
       # of ajacent pairs that together swap the original two entries
@@ -224,7 +241,7 @@ module Lachisis
       def adjacent_swaps(swap, list)
         start = swap
         finish = []
-        affected_indices = list.each_with_index.select do |loc, index|
+        affected_indices = list.each_with_index.select do |loc, _index|
           # Use the flip-flop operator to pick the two affected locations
           # and any between them. Note we need an `if` to do this as flip-flop
           # only works in that context.
@@ -267,7 +284,6 @@ module Lachisis
         # Ensure the first location is earlier in order (makes some comparisons later simpler)
         if first_location_index > second_location_index
           first_location, second_location = second_location, first_location
-          first_location_index, second_location_index = second_location_index, first_location_index
         end
 
         # Remove crossings that no longer apply
@@ -351,16 +367,18 @@ module Lachisis
             _char, destination1, index1 = *arriving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
             leaving_pair[(initial_index1 + 1)..].each do |char2, event2|
               next if event1 == event2 # Not actually a swap in this case
+
               _char, destination2, index2 = *arriving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
 
-              if index1 < index2 # Character leaving the previously-higher location arrives at a higher destination
-                crossing = Crossing.new(
-                  [char1, char2],
-                  [event1.location, event2.location],
-                  [destination1.location, destination2.location]
-                )
-                new_leaving << crossing
-              end
+              next unless index1 < index2
+
+              # Character leaving the previously-higher location arrives at a higher destination
+              crossing = Crossing.new(
+                [char1, char2],
+                [event1.location, event2.location],
+                [destination1.location, destination2.location]
+              )
+              new_leaving << crossing
             end
           end
 
@@ -372,6 +390,7 @@ module Lachisis
             _char, destination1, index1 = *leaving_all.each_with_index.detect { |a| a[0][0] == char1 }.flatten
             arriving_pair[(initial_index1 + 1)..].each do |char2, event2|
               next if event1 == event2 # Not actually a swap in this case
+
               _char, destination2, index2 = *leaving_all.each_with_index.detect { |b| b[0][0] == char2 }.flatten
 
               if index1 < index2 # Character arriving at the previously-higher location left from a higher destination
@@ -436,12 +455,15 @@ module Lachisis
         # That means we only need to toggle the state of all and only crossings in this
         # A-(to-or-from)-B-and-C onfiguration.
 
-        affected_crossings = @weave.frames.each_cons(2).map do |frame1, frame2|
+        all_crossings = @weave.frames.each_cons(2).map do |frame1, frame2|
           {
             from: frame1.events.select { |e| (e.characters & swapped).any? }.map(&:location),
             to: frame2.events.select { |e| (e.characters & swapped).any? }.map(&:location)
           }
         end
+
+        affected_crossings =
+          all_crossings
           .select { |pair| (pair[:from].length == 1) ^ (pair[:to].length == 1) }
           .map { |pair| Crossing.new(swapped, pair[:from], pair[:to]) }
 
@@ -452,4 +474,3 @@ module Lachisis
     end
   end
 end
-

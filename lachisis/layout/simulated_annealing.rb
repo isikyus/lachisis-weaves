@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'lachisis/layout'
 require 'lachisis/layout/crossings'
 
@@ -12,6 +14,8 @@ module Lachisis
       COOLING_RATE = 0.7
 
       def initialize
+        super
+
         # Chosen by fair dice roll ...
         # Actually just constant for now so results are deterministic
         @random = Random.new(4)

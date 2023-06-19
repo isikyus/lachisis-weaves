@@ -106,6 +106,13 @@ module Lachisis
       end
     end
 
+    def end_document
+      @weave.propagate!
+      @callback.call(@weave)
+    end
+
+    private
+
     # @param type ["sort-locations","sort-characters"] What to sort
     # @param order [Array<String>] What order to sort those things in.
     #               May include asterisks as wild cards.
@@ -124,11 +131,6 @@ module Lachisis
       else
         raise "Unknown sorting hint type #{type}"
       end
-    end
-
-    def end_document
-      @weave.propagate!
-      @callback.call(@weave)
     end
   end
 end

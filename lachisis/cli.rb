@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'nokogiri'
 require 'optparse'
 
@@ -6,7 +8,8 @@ require_relative 'parser'
 require_relative 'parser/line_number_aware'
 
 module Lachisis
-  # Wrapper to set up other classes for command-line use
+  # Recognises command-line options and args and
+  # runs the appropriate bits of Lachisis code
   class CLI
     def self.run
       new.run
@@ -85,7 +88,9 @@ module Lachisis
 
       lines += weave.frames.flat_map do |frame|
         frame.events.map do |event|
-          format('%11s : %10s', frame.timestamp, event)
+          format('%<time>11s : %<event>10s',
+                 time: frame.timestamp,
+                 event: event)
         end
       end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'nokogiri'
 
 require_relative 'event'
@@ -6,7 +8,9 @@ require_relative 'weave'
 module Lachisis
   NAMESPACE = 'lachisis'
 
+  # Parses Lachisis processing instructions from XML
   class Parser < Nokogiri::XML::SAX::Document
+    # Wrapper for XML parsing errors
     class Error < StandardError
       def initialize(message)
         super("XML parse error: #{message}")
@@ -17,6 +21,8 @@ module Lachisis
     INITIAL = -1000
 
     def initialize(&callback)
+      super
+
       @major_time = 0
       @minor_time = 0
       @weave = Weave.new
@@ -37,14 +43,13 @@ module Lachisis
       return unless name.downcase == NAMESPACE
 
       location = nil
-      existing_chars = @current&.characters || []
-      entering_chars = []
-      present_chars = []
+      existing_actions = @current&.actions || {}
+      new_actions = {}
       times = []
 
       updates = content.strip.split(/\s+/)
 
-      if ['sort-locations', 'sort-characters'].include?(updates[0])
+      if %w[sort-locations sort-characters].include?(updates[0])
         sorting_hint(*updates)
         return
       end
@@ -56,35 +61,33 @@ module Lachisis
           raise "Invalid update: expected x:y, got \"#{update}\""
         end
 
+        action_strings = Event::ACTION_TYPES.map(&:to_s)
         case event
         when 'time'
           times << value.to_f
-          existing_chars = []
+          existing_actions = {}
 
         when 'location'
           location = value
-          existing_chars = []
+          existing_actions = {}
 
-        when 'enter'
-          entering_chars << value
-
-        when 'present'
-          present_chars << value
+        when *action_strings
+          new_actions[value.to_sym] = event.to_sym
 
         else
-          raise "Unknown update type #{update}"
+          raise "Unknown update type #{update}. Expected 'time:<value>'," \
+                "'location:<name>', or <event>:<char> " \
+                "where <event> is one of these: #{action_strings.join(', ')}"
         end
       end
 
-      entering_chars += present_chars
-
       if times.any?
         raise "Invalid processing instruction #{content}: need location" unless location
-        @minor_time = 0
 
+        @minor_time = 0
         times.sort.each do |t|
-          event ||= Event.new(location, [])
-          event.characters |= entering_chars
+          event ||= Event.new(location, {})
+          event.actions.merge!(new_actions)
 
           @major_time = t
           @weave.add(@major_time, @minor_time, event)
@@ -94,12 +97,21 @@ module Lachisis
       else
         @minor_time += 1
         location ||= @current.location
-        @current = Event.new(location,
-                             existing_chars | entering_chars)
+        @current = Event.new(
+          location,
+          existing_actions.merge(new_actions)
+        )
 
         @weave.add(@major_time, @minor_time, @current)
       end
     end
+
+    def end_document
+      @weave.propagate!
+      @callback.call(@weave)
+    end
+
+    private
 
     # @param type ["sort-locations","sort-characters"] What to sort
     # @param order [Array<String>] What order to sort those things in.
@@ -112,18 +124,13 @@ module Lachisis
       end
 
       case type
-        when 'sort-locations'
-          @weave.location_sorting = regexes
-        when 'sort-characters'
-          @weave.character_sorting = regexes
-        else
-          raise "Unknown sorting hint type #{type}"
+      when 'sort-locations'
+        @weave.location_sorting = regexes
+      when 'sort-characters'
+        @weave.character_sorting = regexes
+      else
+        raise "Unknown sorting hint type #{type}"
       end
-    end
-
-    def end_document
-      @weave.propagate!
-      @callback.call(@weave)
     end
   end
 end

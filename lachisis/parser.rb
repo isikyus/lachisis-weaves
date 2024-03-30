@@ -6,6 +6,17 @@ require_relative 'event'
 require_relative 'weave'
 
 module Lachisis
+  module Tokens
+    Time = Struct.new(:time) do
+      def <=>(other)
+        self.time <=> other.time
+      end
+    end
+    Location = Struct.new(:location)
+    Action = Struct.new(:character, :action)
+  end
+
+  # Used to distinguish ours from other processing instructions.
   NAMESPACE = 'lachisis'
 
   # Parses Lachisis processing instructions from XML
@@ -43,7 +54,6 @@ module Lachisis
       return unless name.downcase == NAMESPACE
 
       location = nil
-      existing_actions = @current&.actions || {}
       new_actions = {}
       times = []
 
@@ -54,32 +64,14 @@ module Lachisis
         return
       end
 
-      updates.each do |update|
-        event, value, *extra = update.split(':')
+      action_tokens = updates.map(&method(:tokenise_update))
+      locations, action_tokens =
+        action_tokens.partition { |at| at.is_a?(Tokens::Location) }
+      times, new_actions =
+        action_tokens.partition { |at| at.is_a?(Tokens::Time) }
 
-        if event.nil? || value.nil? || (extra || []).any?
-          raise "Invalid update: expected x:y, got \"#{update}\""
-        end
-
-        action_strings = Event::ACTION_TYPES.map(&:to_s)
-        case event
-        when 'time'
-          times << value.to_f
-          existing_actions = {}
-
-        when 'location'
-          location = value
-          existing_actions = {}
-
-        when *action_strings
-          new_actions[value.to_sym] = event.to_sym
-
-        else
-          raise "Unknown update type #{update}. Expected 'time:<value>'," \
-                "'location:<name>', or <event>:<char> " \
-                "where <event> is one of these: #{action_strings.join(', ')}"
-        end
-      end
+      raise 'Maximum one location' unless locations.length <= 1
+      location = locations.any? && locations.first.location
 
       if times.any?
         raise "Invalid processing instruction #{content}: need location" unless location
@@ -87,9 +79,9 @@ module Lachisis
         @minor_time = 0
         times.sort.each do |t|
           event ||= Event.new(location, {})
-          event.actions.merge!(new_actions)
+          event.actions.merge!(actions_hash(new_actions))
 
-          @major_time = t
+          @major_time = t.time
           @weave.add(@major_time, @minor_time, event)
 
           @current = event
@@ -97,9 +89,10 @@ module Lachisis
       else
         @minor_time += 1
         location ||= @current.location
+
         @current = Event.new(
           location,
-          existing_actions.merge(new_actions)
+          actions_hash(new_actions)
         )
 
         @weave.add(@major_time, @minor_time, @current)
@@ -112,6 +105,37 @@ module Lachisis
     end
 
     private
+
+    def actions_hash(new_actions)
+      Hash[
+        new_actions.map { |a| [a.character, a.action] }
+      ]
+    end
+
+    def tokenise_update(update)
+      event, value, *extra = update.split(':')
+
+      if event.nil? || value.nil? || (extra || []).any?
+        raise "Invalid update: expected x:y, got \"#{update}\""
+      end
+
+      action_strings = Event::ACTION_TYPES.map(&:to_s)
+      case event
+      when 'time'
+        Tokens::Time.new(value.to_f)
+
+      when 'location'
+        Tokens::Location.new(value)
+
+      when *action_strings
+        Tokens::Action.new(value.to_sym, event.to_sym)
+
+      else
+      raise "Unknown update type #{update}. Expected 'time:<value>'," \
+              "'location:<name>', or <event>:<char> " \
+              "where <event> is one of these: #{action_strings.join(', ')}"
+      end
+    end
 
     # @param type ["sort-locations","sort-characters"] What to sort
     # @param order [Array<String>] What order to sort those things in.

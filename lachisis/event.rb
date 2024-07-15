@@ -51,7 +51,7 @@ module Lachisis
                        .map { |c, a| "#{c}:#{a}" }
                        .join(', ')
 
-      "At %<loc>15s : %<acts>s" % { loc: location, acts: actions_string }
+      'At %<loc>15s : %<acts>s' % { loc: location, acts: actions_string }
     end
   end
 

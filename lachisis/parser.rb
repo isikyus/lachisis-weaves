@@ -9,7 +9,7 @@ module Lachisis
   module Tokens
     Time = Struct.new(:time) do
       def <=>(other)
-        self.time <=> other.time
+        time <=> other.time
       end
     end
     Location = Struct.new(:location)
@@ -21,6 +21,7 @@ module Lachisis
 
   # Parses Lachisis processing instructions from XML
   class Parser < Nokogiri::XML::SAX::Document
+
     # Wrapper for XML parsing errors
     class Error < StandardError
       def initialize(message)
@@ -28,16 +29,24 @@ module Lachisis
       end
     end
 
+    # Raised when the XML contains events we don't recognise.
     class UnknownUpdateType < Error
       def initialize(update)
-        "Unknown update type #{update}. Expected 'time:<value>'," \
-           "'location:<name>', or <event>:<char> " \
-           "where <event> is one of these: #{Event::ACTION_TYPES.join(', ')}"
+        super(
+          "Unknown update type #{update}. Expected 'time:<value>'," \
+            "'location:<name>', or <event>:<char> " \
+            "where <event> is one of these: #{Event::ACTION_TYPES.join(', ')}"
+        )
       end
     end
 
     # Time that should be before all other events
     INITIAL = -1000
+
+    SORTING_HINT_TYPES = {
+      'sort-locations' => :locations,
+      'sort-characters' => :characters
+    }
 
     def initialize(&callback)
       super
@@ -63,14 +72,11 @@ module Lachisis
 
       updates = content.strip.split(/\s+/)
 
-      if %w[sort-locations sort-characters].include?(updates[0])
-        sorting_hint(*updates) and return
-      end
+      sorting_hint(*updates) and return if sorting_hint?(updates)
 
       add_events_for_updates(
         **classify_updates(updates)
       )
-
     rescue Error => e
       raise Error, "Invalid processing instruction #{content}: #{e.message}"
     end
@@ -82,12 +88,17 @@ module Lachisis
 
     private
 
+    def sorting_hint?(updates)
+      SORTING_HINT_TYPES.keys.include?(updates.first)
+    end
+
     def classify_updates(updates)
       tokens = updates.map(&method(:tokenise_update))
       locations, tokens = tokens.partition { |at| at.is_a?(Tokens::Location) }
       times, new_actions = tokens.partition { |at| at.is_a?(Tokens::Time) }
 
       raise Error, 'Maximum one location' unless locations.length <= 1
+
       location = locations.any? && locations.first.location
 
       {
@@ -118,7 +129,7 @@ module Lachisis
       add_event(new_actions, location)
     end
 
-    def add_event(actions_data, location=@current.location)
+    def add_event(actions_data, location = @current.location)
       @current = Event.new(
         location,
         actions_hash(actions_data)
@@ -153,7 +164,8 @@ module Lachisis
 
       types = Event::ACTION_TYPES
       unless types.include?(action)
-        raise UnknownUpdateType, "#{action_string}:#{value}"
+        update = "#{action_string}:#{value}"
+        raise UnknownUpdateType, update
       end
 
       Tokens::Action.new(value.to_sym, action)
@@ -163,10 +175,10 @@ module Lachisis
     # @param order [Array<String>] What order to sort those things in.
     #               May include asterisks as wild cards.
     def sorting_hint(type, *order)
-      case type
-      when 'sort-locations'
+      case SORTING_HINT_TYPES[type]
+      when :locations
         @weave.location_sorting = sort_regexes(order)
-      when 'sort-characters'
+      when :characters
         @weave.character_sorting = sort_regexes(order)
       else
         raise Error, "Unknown sorting hint type #{type}"

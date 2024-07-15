@@ -55,7 +55,6 @@ module Lachisis
 
       location = nil
       new_actions = {}
-      times = []
 
       updates = content.strip.split(/\s+/)
 
@@ -64,39 +63,14 @@ module Lachisis
         return
       end
 
-      action_tokens = updates.map(&method(:tokenise_update))
-      locations, action_tokens =
-        action_tokens.partition { |at| at.is_a?(Tokens::Location) }
-      times, new_actions =
-        action_tokens.partition { |at| at.is_a?(Tokens::Time) }
+      add_events_for_updates(
+        **classify_updates(updates)
+      )
 
-      raise 'Maximum one location' unless locations.length <= 1
-      location = locations.any? && locations.first.location
-
-      if times.any?
-        raise "Invalid processing instruction #{content}: need location" unless location
-
-        @minor_time = 0
-        times.sort.each do |t|
-          event ||= Event.new(location, {})
-          event.actions.merge!(actions_hash(new_actions))
-
-          @major_time = t.time
-          @weave.add(@major_time, @minor_time, event)
-
-          @current = event
-        end
-      else
-        @minor_time += 1
-        location ||= @current.location
-
-        @current = Event.new(
-          location,
-          actions_hash(new_actions)
-        )
-
-        @weave.add(@major_time, @minor_time, @current)
-      end
+    rescue Error => e
+      raise Error.new(
+        "Invalid processing instruction #{content}: #{e.message}"
+      )
     end
 
     def end_document
@@ -105,6 +79,46 @@ module Lachisis
     end
 
     private
+
+    def classify_updates(updates)
+      action_tokens = updates.map(&method(:tokenise_update))
+      locations, action_tokens =
+        action_tokens.partition { |at| at.is_a?(Tokens::Location) }
+      times, new_actions =
+        action_tokens.partition { |at| at.is_a?(Tokens::Time) }
+
+      raise Error, 'Maximum one location' unless locations.length <= 1
+      location = locations.any? && locations.first.location
+
+      {
+        location: location,
+        times: times,
+        new_actions: new_actions
+      }
+    end
+
+    def add_events_for_updates(location:, times:, new_actions:)
+      if times.any?
+        raise Error, 'Need location' unless location
+
+        @minor_time = 0
+        times.sort.each do |t|
+          @major_time = t.time
+          add_event(new_actions, location)
+        end
+      else
+        @minor_time += 1
+        add_event(new_actions, location || @current.location)
+      end
+    end
+
+    def add_event(actions_data, location=@current.location)
+      @current = Event.new(
+        location,
+        actions_hash(actions_data)
+      )
+      @weave.add(@major_time, @minor_time, @current)
+    end
 
     def actions_hash(new_actions)
       Hash[

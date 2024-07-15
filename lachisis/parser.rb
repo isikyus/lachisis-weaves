@@ -28,6 +28,14 @@ module Lachisis
       end
     end
 
+    class UnknownUpdateType < Error
+      def initialize(update)
+        "Unknown update type #{update}. Expected 'time:<value>'," \
+           "'location:<name>', or <event>:<char> " \
+           "where <event> is one of these: #{Event::ACTION_TYPES.join(', ')}"
+      end
+    end
+
     # Time that should be before all other events
     INITIAL = -1000
 
@@ -53,14 +61,10 @@ module Lachisis
     def processing_instruction(name, content)
       return unless name.downcase == NAMESPACE
 
-      location = nil
-      new_actions = {}
-
       updates = content.strip.split(/\s+/)
 
       if %w[sort-locations sort-characters].include?(updates[0])
-        sorting_hint(*updates)
-        return
+        sorting_hint(*updates) and return
       end
 
       add_events_for_updates(
@@ -68,9 +72,7 @@ module Lachisis
       )
 
     rescue Error => e
-      raise Error.new(
-        "Invalid processing instruction #{content}: #{e.message}"
-      )
+      raise Error, "Invalid processing instruction #{content}: #{e.message}"
     end
 
     def end_document
@@ -81,11 +83,9 @@ module Lachisis
     private
 
     def classify_updates(updates)
-      action_tokens = updates.map(&method(:tokenise_update))
-      locations, action_tokens =
-        action_tokens.partition { |at| at.is_a?(Tokens::Location) }
-      times, new_actions =
-        action_tokens.partition { |at| at.is_a?(Tokens::Time) }
+      tokens = updates.map(&method(:tokenise_update))
+      locations, tokens = tokens.partition { |at| at.is_a?(Tokens::Location) }
+      times, new_actions = tokens.partition { |at| at.is_a?(Tokens::Time) }
 
       raise Error, 'Maximum one location' unless locations.length <= 1
       location = locations.any? && locations.first.location
@@ -99,17 +99,23 @@ module Lachisis
 
     def add_events_for_updates(location:, times:, new_actions:)
       if times.any?
-        raise Error, 'Need location' unless location
+        raise Error, 'Need location after time jump' unless location
 
-        @minor_time = 0
         times.sort.each do |t|
-          @major_time = t.time
-          add_event(new_actions, location)
+          time_jump_to_event(location: location,
+                             new_actions: new_actions,
+                             time: t)
         end
       else
         @minor_time += 1
         add_event(new_actions, location || @current.location)
       end
+    end
+
+    def time_jump_to_event(location:, time:, new_actions:)
+      @minor_time = 0
+      @major_time = time.time
+      add_event(new_actions, location)
     end
 
     def add_event(actions_data, location=@current.location)
@@ -127,7 +133,6 @@ module Lachisis
     end
 
     def tokenise_update(update)
-      action_strings = Event::ACTION_TYPES.map(&:to_s)
       case update.split(':')
       in ['time', value]
         Tokens::Time.new(value.to_f)
@@ -135,34 +140,45 @@ module Lachisis
       in ['location', value]
         Tokens::Location.new(value)
 
-      in [action, value]
-        raise 'BANG' unless action_strings.include?(action)
-        Tokens::Action.new(value.to_sym, action.to_sym)
+      in [action_string, value]
+        action_for_string(action_string, value)
 
       else
-        raise "Unknown update type #{update}. Expected 'time:<value>'," \
-                "'location:<name>', or <event>:<char> " \
-                "where <event> is one of these: #{action_strings.join(', ')}"
+        raise UnknownUpdateType, update
       end
+    end
+
+    def action_for_string(action_string, value)
+      action = action_string.to_sym
+
+      types = Event::ACTION_TYPES
+      unless types.include?(action)
+        raise UnknownUpdateType, "#{action_string}:#{value}"
+      end
+
+      Tokens::Action.new(value.to_sym, action)
     end
 
     # @param type ["sort-locations","sort-characters"] What to sort
     # @param order [Array<String>] What order to sort those things in.
     #               May include asterisks as wild cards.
     def sorting_hint(type, *order)
-      regexes = order.map do |pattern|
+      case type
+      when 'sort-locations'
+        @weave.location_sorting = sort_regexes(order)
+      when 'sort-characters'
+        @weave.character_sorting = sort_regexes(order)
+      else
+        raise Error, "Unknown sorting hint type #{type}"
+      end
+    end
+
+    # @param order_elements [Array<String>]
+    def sort_regexes(order_elements)
+      order_elements.map do |pattern|
         escaped = Regexp.escape(pattern)
         escaped.gsub!('\*', '.*') if pattern.include?('*')
         Regexp.new("^#{escaped}$")
-      end
-
-      case type
-      when 'sort-locations'
-        @weave.location_sorting = regexes
-      when 'sort-characters'
-        @weave.character_sorting = regexes
-      else
-        raise "Unknown sorting hint type #{type}"
       end
     end
   end

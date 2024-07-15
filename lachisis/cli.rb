@@ -81,20 +81,21 @@ module Lachisis
     end
 
     def list_events(weave)
-      lines = [
+      [
         "Location order: #{weave.location_sorting.inspect}",
-        "Character order: #{weave.character_sorting.inspect}"
-      ]
+        "Character order: #{weave.character_sorting.inspect}",
+        *list_lines(weave)
+      ].join("\n")
+    end
 
-      lines += weave.frames.flat_map do |frame|
+    def list_lines(weave)
+      weave.frames.flat_map do |frame|
         frame.events.map do |event|
           format('%<time>11s : %<event>10s',
                  time: frame.timestamp,
                  event: event)
         end
       end
-
-      lines.join("\n")
     end
 
     def die(message, status: 1)

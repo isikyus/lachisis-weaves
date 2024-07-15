@@ -2,7 +2,7 @@
 plugins:
   rubocop:
     enabled: true
-    channel: rubocop-1-50-2
+    channel: rubocop-1-56-3
   fixme:
     enabled: true
   markdownlint:

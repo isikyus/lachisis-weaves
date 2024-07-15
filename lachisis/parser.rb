@@ -127,27 +127,22 @@ module Lachisis
     end
 
     def tokenise_update(update)
-      event, value, *extra = update.split(':')
-
-      if event.nil? || value.nil? || (extra || []).any?
-        raise "Invalid update: expected x:y, got \"#{update}\""
-      end
-
       action_strings = Event::ACTION_TYPES.map(&:to_s)
-      case event
-      when 'time'
+      case update.split(':')
+      in ['time', value]
         Tokens::Time.new(value.to_f)
 
-      when 'location'
+      in ['location', value]
         Tokens::Location.new(value)
 
-      when *action_strings
-        Tokens::Action.new(value.to_sym, event.to_sym)
+      in [action, value]
+        raise 'BANG' unless action_strings.include?(action)
+        Tokens::Action.new(value.to_sym, action.to_sym)
 
       else
-      raise "Unknown update type #{update}. Expected 'time:<value>'," \
-              "'location:<name>', or <event>:<char> " \
-              "where <event> is one of these: #{action_strings.join(', ')}"
+        raise "Unknown update type #{update}. Expected 'time:<value>'," \
+                "'location:<name>', or <event>:<char> " \
+                "where <event> is one of these: #{action_strings.join(', ')}"
       end
     end
 

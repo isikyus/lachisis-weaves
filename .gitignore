@@ -1,3 +1,7 @@
 
 # RSpec run history data
 spec/examples.txt
+
+# Files created by various other tools
+.byebug_history
+coverage/

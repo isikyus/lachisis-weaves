@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lachisis
   # Layout strategies, responsible for deciding what order to put locations
   # and# characters in.

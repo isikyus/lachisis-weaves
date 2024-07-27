@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lachisis
   class Parser
     # Wrapper around Nokogiri::XML::SAX parser that tracks the line
@@ -5,6 +7,7 @@ module Lachisis
     class LineNumberAware
       # Extend parser errors with the location in the file
       # the error occured.
+      # Since Nokogiri SAX parsing doesn't give us this by default
       class LocatedError < Lachisis::Parser::Error
         def initialize(filename, line, position, cause)
           super("#{filename}:#{line} (near byte #{position}): " \

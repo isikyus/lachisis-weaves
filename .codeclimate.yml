@@ -1,4 +1,15 @@
+---
 plugins:
   rubocop:
     enabled: true
-    channel: rubocop-1-31-0
+    channel: rubocop-1-56-3
+  fixme:
+    enabled: true
+  markdownlint:
+    enabled: true
+
+exclude_patterns:
+  # Ignoring for now as it's not actually
+  # useful so churn should be minimal.
+  - 'lachisis/layout/crossings.rb'
+  - '**/spec/'

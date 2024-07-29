@@ -129,5 +129,48 @@ RSpec.describe Lachisis::SVG do
         expect([y1b, y2b]).to eq [y1a, y2a]
       end
     end
+
+    context 'with two characters that cross' do
+      let(:weave) do
+        weave = Lachisis::Weave.new
+        weave.add(100, 10, Lachisis::Event.new('somewhere', alice: :present))
+        weave.add(100, 20, Lachisis::Event.new('nowhere', alice: :present))
+
+        weave.add(100, 10, Lachisis::Event.new('nowhere', bob: :present))
+        weave.add(100, 20, Lachisis::Event.new('somewhere', bob: :present))
+        weave
+      end
+
+      before do
+        allow(layout).to receive(:layout)
+          .and_return([['somewhere', 'nowhere'],
+                       [:alice, :bob]])
+      end
+
+      specify 'crosses their lines over' do
+        thread_a = svg_xml.css('#thread_alice_0')
+        expect(thread_a.length).to eq 1
+
+        coords_a = thread_a[0]['d'].match(/M (\d+) (\d+) .* (\d+) (\d+)/)
+        expect(coords_a).not_to be_nil
+
+        thread_b = svg_xml.css('#thread_bob_0')
+        expect(thread_b.length).to eq 1
+
+        coords_b = thread_b[0]['d'].match(/M (\d+) (\d+) .* (\d+) (\d+)/)
+        expect(coords_b).not_to be_nil
+
+        _, x1a, y1a, x2a, y2a = *coords_a.to_a.map(&:to_f)
+        _, x1b, y1b, x2b, y2b = *coords_b.to_a.map(&:to_f)
+
+        # Starting and ending columns are the same for both lines
+        expect(x1a).to eq x1b
+        expect(x2a).to eq x2b
+
+        # Threads swap horizontal position
+        expect(y1a).to eq y2b
+        expect(y1b).to eq y2a
+      end
+    end
   end
 end

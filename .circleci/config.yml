@@ -3,7 +3,6 @@
 version: 2.1
 
 orbs:
-  code-climate: travelaudience/code-climate@0.1.5
   ruby: circleci/ruby@1.8.0
 
 jobs:
@@ -14,14 +13,22 @@ jobs:
       - checkout
       - ruby/install:
           version: "$(cat .ruby-version)"
-      - code-climate/install
       - ruby/install-deps:
           key: gems-v1
+      - run:
+          name: Set up Code Climate test-reporter
+          command: |
+            # download test reporter as a static binary
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - run:
+          name: CC test reporter - before build
+          command: ./cc-test-reporter before-build
       - ruby/rspec-test
-      - code-climate/format_coverage:
-          coverage_file: coverage/coverage.json
-          input_type: simplecov
-      - code-climate/upload_coverage
+      - run:
+          name: CC test reporter - after build
+          command: |
+            ./cc-test-reporter after-build --coverage-input-type simplecov
 
 workflows:
   test:

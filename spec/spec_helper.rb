@@ -1,6 +1,8 @@
 require 'simplecov'
 SimpleCov.start
 
+require 'byebug'
+
 # Load Lachisis library files
 $LOAD_PATH.unshift(File.dirname(__dir__))
 

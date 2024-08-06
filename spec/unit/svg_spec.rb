@@ -6,9 +6,6 @@ require 'lachisis/svg'
 
 require 'nokogiri'
 
-# TODO: move to spec helper
-require 'byebug'
-
 RSpec.describe Lachisis::SVG do
   subject(:svg) { Lachisis::SVG.new(layout) }
 

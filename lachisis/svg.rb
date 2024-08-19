@@ -5,9 +5,35 @@ module Lachisis
 
   # Knows how to render a weave to SVG
   class SVG
+
+    # Measurement information common to the whole SVG
+    class Metrics
+      def initialize(diagram_width:, max_name_size:)
+        @width = diagram_width
+        @max_name_size = max_name_size
+        @last_location_end = 0
+      end
+
+      attr_accessor :last_location_end
+
+      def max_x
+        @width + @max_name_size * 2
+      end
+
+      def max_y
+        last_location_end + Lachisis::SVG::EDGE_OFFSET
+      end
+
+      # TODO: what actually is this?
+      def event_name_offset(index)
+        @max_name_size + (index * EVENT_SPACE)
+      end
+    end
+
     THREAD_WIDTH = 3
     THREAD_SPACING = THREAD_WIDTH * 2 # Space between character threads
     LOCATION_GAP = 2 # In thread widths
+    EDGE_OFFSET = LOCATION_GAP * THREAD_SPACING
 
     TIME_GAP = 5 # Space between events horizontally
     BASE_DURATION = 10 # Space events take up
@@ -36,57 +62,37 @@ module Lachisis
     end
 
     def call(weave)
-      threads = {}
-      location_sizes = {}
-
-      weave.frames.each_with_index do |frame, index|
-        frame.events.each do |event|
-
-          # TODO: could use Weave#threads here?
-          event.characters.each do |c|
-            threads[c] ||= []
-            threads[c] << { index: index, event: event }
-          end
-
-          location_size = [location_sizes[event.location], event.characters.length]
-              .compact
-              .max
-          location_sizes[event.location] = location_size
-        end
-      end
-
+      threads, location_sizes = build_threads(weave)
       location_order, characters = @layout.layout(weave)
+
       # TODO: turned off for now as crossing calculation makes assumptions about propogation that don't hold.
       #$stderr.puts "Crossing number: #{Layout::Crossings.count(weave, location_order, characters).total}"
       $stderr.puts "Location order: #{location_order.inspect}"
 
       # TODO: could use Nokogiri here
 
-      diagram_width = weave.frames.length * EVENT_SPACE
-
-      # HACK: should really use font metrics or similar
-      max_name_size = FONT_SIZE * characters.map(&:length).max
-      max_x = diagram_width + max_name_size * 2
+      metrics = Metrics.new(
+        diagram_width: weave.frames.length * EVENT_SPACE,
+        # HACK: should really use font metrics or similar
+        max_name_size: characters.map(&:length).max * FONT_SIZE
+      )
 
       # Calculate where (horizontal row) to each location fits. Assume order stays the same.
       # Start with a bit of space so the first line is readable-ish
-      edge_offset = LOCATION_GAP * THREAD_SPACING
-      last_location_end = 0
 
       location_spacing = {}
       location_sizes.sort_by { |l, _sz| location_order.index(l) }.each do |location, char_count|
-        start_y = last_location_end + edge_offset
-        last_location_end = start_y + char_count * THREAD_SPACING
+        start_y = metrics.last_location_end + EDGE_OFFSET
+        metrics.last_location_end = start_y + char_count * THREAD_SPACING
 
         location_spacing[location] = start_y
       end
 
       $stderr.puts(location_spacing.map { |location, space| "%5d (%2d) %s" % [space, location_order.index(location) || -1, location.inspect] })
 
-      max_y = last_location_end + edge_offset
       xml_data = [
         '<?xml version="1.0"?>',
-        "<svg width='#{max_x}' height='#{max_y}' xmlns='http://www.w3.org/2000/svg'>"
+        "<svg width='#{metrics.max_x}' height='#{metrics.max_y}' xmlns='http://www.w3.org/2000/svg'>"
       ]
 
       # Draw location labels
@@ -97,7 +103,7 @@ module Lachisis
           .detect { |f, _i| f.events.map(&:location).include?(loc) }
 
         label_y = y_position + (location_sizes[loc] * THREAD_SPACING / 2.0)
-        label_x = max_name_size + (first_frame_index * EVENT_SPACE)
+        label_x = metrics.event_name_offset(first_frame_index)
         xml_data << %{<text x="#{label_x - LABEL_OFFSET}" y="#{label_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE * 2}" opacity="0.5">#{loc}</text> }
       end
 
@@ -108,7 +114,7 @@ module Lachisis
 
         path_points = events.flat_map do |index_and_event|
           index_and_event => {index:, event:}
-          x = max_name_size + (index * EVENT_SPACE)
+          x = metrics.event_name_offset(index)
 
           # Allocate character rows based on the global sorted list, so they
           # don't cross over within events
@@ -210,6 +216,31 @@ module Lachisis
       xml_data << '</svg>'
 
       xml_data.join("\n")
+    end
+
+    private
+
+    def build_threads(weave)
+      threads = {}
+      location_sizes = {}
+
+      weave.frames.each_with_index do |frame, index|
+        frame.events.each do |event|
+
+          # TODO: could use Weave#threads here?
+          event.characters.each do |c|
+            threads[c] ||= []
+            threads[c] << { index: index, event: event }
+          end
+
+          location_size = [location_sizes[event.location], event.characters.length]
+              .compact
+              .max
+          location_sizes[event.location] = location_size
+        end
+      end
+
+      [threads, location_sizes]
     end
   end
 end

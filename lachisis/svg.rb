@@ -112,40 +112,8 @@ module Lachisis
       relabel_offset = 0
       threads.each do |character, events|
 
-        path_points = events.flat_map do |index_and_event|
-          index_and_event => {index:, event:}
-          x = metrics.event_name_offset(index)
-
-          # Allocate character rows based on the global sorted list, so they
-          # don't cross over within events
-          character_row = (characters & event.characters.to_a).index(character)
-
-          y = location_spacing[event.location]
-          y += character_row * THREAD_SPACING
-
-          last_location = event.location
-          [
-            [x, y],
-            [x + BASE_DURATION, y]
-          ]
-        end
-
-        # Simplify path to make relabelling easier
-        before = path_points.length
-        relevant_points = path_points.each_cons(3).map do |p0, p1, p2|
-          # Only consider collinear if the line is horizontal (all same y)
-          if p0[1] == p1[1] && p1[1] == p2[1]
-            nil
-          else
-            p1
-          end
-        end
-        path_points = [
-          path_points.first,
-          *relevant_points.compact,
-          path_points.last
-        ]
-        $stderr.puts "Before simplify: #{before}; after : #{path_points.length}; change: #{before - path_points.length}"
+        path = events_to_points(character, events, metrics, characters, location_spacing)
+        path_points = simplify(path)
 
         # Insert labels at intervals in straight lines
         relabel_offset = (relabel_offset * PHI) % RELABEL_INTERVAL
@@ -219,6 +187,47 @@ module Lachisis
     end
 
     private
+
+    def events_to_points(character, events, metrics, characters, location_spacing)
+      events.flat_map do |index_and_event|
+        index_and_event => {index:, event:}
+        x = metrics.event_name_offset(index)
+
+        # Allocate character rows based on the global sorted list, so they
+        # don't cross over within events
+        character_row = (characters & event.characters.to_a).index(character)
+
+        y = location_spacing[event.location]
+        y += character_row * THREAD_SPACING
+
+        last_location = event.location
+        [
+          [x, y],
+          [x + BASE_DURATION, y]
+        ]
+      end
+    end
+
+    def simplify(path_points)
+      # Simplify path to make relabelling easier
+      before = path_points.length
+      relevant_points = path_points.each_cons(3).map do |p0, p1, p2|
+        # Only consider collinear if the line is horizontal (all same y)
+        if p0[1] == p1[1] && p1[1] == p2[1]
+          nil
+        else
+          p1
+        end
+      end
+      path_points = [
+        path_points.first,
+        *relevant_points.compact,
+        path_points.last
+      ]
+      $stderr.puts "Before simplify: #{before}; after : #{path_points.length}; change: #{before - path_points.length}"
+
+      path_points
+    end
 
     def build_threads(weave)
       threads = {}

@@ -53,6 +53,16 @@ module Lachisis
 
       'At %<loc>15s : %<acts>s' % { loc: location, acts: actions_string }
     end
+
+    def initial_action(character)
+      action = @actions[character]
+      ARRIVE.include?(action) ? action : :present
+    end
+
+    def final_action(character)
+      action = @actions[character]
+      DEPART.include?(action) ? action : :present
+    end
   end
 
   # Wraps an event and adds time inforation:

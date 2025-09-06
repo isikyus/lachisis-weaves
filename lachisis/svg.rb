@@ -123,11 +123,14 @@ module Lachisis
         label_length = FONT_SIZE * character.length
 
         start, *_rest = *path_points
-        paths = [[start]]
-        path_points.each_cons(2).flat_map do |segment|
+        paths = [[start[0..1]]]
+        symbols = []
+        path_points.each_cons(2).map do |segment|
           p0, p1 = *segment
-          x0, y0 = *p0
-          x1, y1 = *p1
+          x0, y0, _ = *p0
+          x1, y1, event = *p1
+
+          symbols << [x1, y1, event] unless event == :present
 
           distance = ((x0 - x1)**2 + (y0 - y1)**2)**0.5
           distance_until_relabel -= distance
@@ -165,7 +168,7 @@ module Lachisis
             distance_until_relabel = RELABEL_INTERVAL
           end
 
-          paths.last << p1
+          paths.last << [x1, y1]
         end
 
         # Actually generate SVG
@@ -176,7 +179,22 @@ module Lachisis
           xml_data << %{<path id="thread_#{character}_#{index}" fill="none" stroke="black" stroke_width="3" d="M #{path.flatten.join(' ')}"/>}
         end
 
-        start_x, start_y, *, end_x, end_y = *path_points.flatten
+        symbols.each_with_index do |point_event, index|
+          x, y, event = *point_event
+          text_positioning =
+            if Event::ARRIVE.include?(event)
+              [-LABEL_OFFSET, 'end']
+            elsif Event::DEPART.include?(event)
+              [+LABEL_OFFSET, 'start']
+            else
+              [0, 'middle']
+            end
+          x_offset, anchor = *text_positioning
+
+          xml_data << %{<text id="event_#{event}_#{index}" x="#{x + x_offset}" y="#{y}" text-anchor="#{anchor}" dominant-baseline="middle" font-size="#{FONT_SIZE}" color="red">#{event}</text>}
+        end
+
+        start_x, start_y, *, end_x, end_y, _ = *path_points.flatten
         xml_data << %{<text x="#{start_x - LABEL_OFFSET}" y="#{start_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
         xml_data << %{<text x="#{end_x + LABEL_OFFSET}" y="#{end_y}" text-anchor="start" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
       end
@@ -202,8 +220,8 @@ module Lachisis
 
         last_location = event.location
         [
-          [x, y],
-          [x + BASE_DURATION, y]
+          [x, y, event.initial_action(character)],
+          [x + BASE_DURATION, y, event.final_action(character)]
         ]
       end
     end
@@ -212,8 +230,9 @@ module Lachisis
       # Simplify path to make relabelling easier
       before = path_points.length
       relevant_points = path_points.each_cons(3).map do |p0, p1, p2|
-        # Only consider collinear if the line is horizontal (all same y)
-        if p0[1] == p1[1] && p1[1] == p2[1]
+        # Ignore points which are (a) collinear, and
+        # (b) don't have any interesting events
+        if horizontally_collinear(p0, p1, p2) && p1[2] == :present
           nil
         else
           p1
@@ -224,9 +243,14 @@ module Lachisis
         *relevant_points.compact,
         path_points.last
       ]
-      $stderr.puts "Before simplify: #{before}; after : #{path_points.length}; change: #{before - path_points.length}"
 
       path_points
+    end
+
+    # @param p1, p1, p3 [Array<Integer, Object>] Possibly-annotated points,
+    #                   represented as arrays [x, y, ...]
+    def horizontally_collinear(p0, p1, p2)
+      p0[1] == p1[1] && p1[1] == p2[1]
     end
 
     def build_threads(weave)

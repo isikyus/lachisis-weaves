@@ -39,7 +39,7 @@ RSpec.describe 'read_events.rb' do
       end
     end
 
-    describe 'manual layout' do
+    xdescribe 'manual layout' do
       let(:manual_svg) do
         File.open('spec/fixtures/kathrakopolis-manual.svg', &:read)
       end

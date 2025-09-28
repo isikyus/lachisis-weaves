@@ -32,6 +32,36 @@ module Lachisis
 
     THREAD_WIDTH = 3
     THREAD_SPACING = THREAD_WIDTH * 2 # Space between character threads
+
+    # Knows how to render various event types symbolically in SVG
+    class Symbols
+      ASTERISK_SPOKES = 7
+      ASTERISK_VOID_FRACTION = 0.5
+      SCALE = Lachisis::SVG::THREAD_SPACING * 0.5
+
+      # TODO: consider storing these pre-rendered?
+      # @return [String] SVG tag.
+      def death(x, y)
+        path = []
+        ASTERISK_SPOKES.times do |spoke|
+          # Offset 180 degrees so the first spoke lands on top of the incoming line.
+          angle = (2 * Math::PI * spoke + ASTERISK_SPOKES / 2.0) / ASTERISK_SPOKES
+          x_extent = Math.cos(angle) * SCALE
+          y_extent = Math.sin(angle) * SCALE
+
+          path += [
+            'M',
+            x + (x_extent * ASTERISK_VOID_FRACTION),
+            y + (y_extent * ASTERISK_VOID_FRACTION),
+            x + x_extent,
+            y + y_extent
+          ]
+        end
+
+        %{<path id="symbol_death_#{x}_#{y}" fill="none" stroke="black" stroke_width="2" d="#{path.join(' ')}"/>}
+      end
+    end
+
     LOCATION_GAP = 2 # In thread widths
     EDGE_OFFSET = LOCATION_GAP * THREAD_SPACING
 
@@ -191,7 +221,13 @@ module Lachisis
             end
           x_offset, anchor = *text_positioning
 
-          xml_data << %{<text id="event_#{event}_#{index}" x="#{x + x_offset}" y="#{y}" text-anchor="#{anchor}" dominant-baseline="middle" font-size="#{FONT_SIZE}" color="red">#{event}</text>}
+          case event
+          when :die
+            xml_data << Symbols.new.death(x, y)
+          else
+            $stderr.puts("No symbol available for event type #{event.inspect}")
+          end
+          #xml_data << %{<text id="event_#{event}_#{index}" x="#{x + x_offset}" y="#{y}" text-anchor="#{anchor}" dominant-baseline="middle" font-size="#{FONT_SIZE}" color="red">#{event}</text>}
         end
 
         start_x, start_y, *, end_x, end_y, _ = *path_points.flatten

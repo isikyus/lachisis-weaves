@@ -33,6 +33,13 @@ module Lachisis
     THREAD_WIDTH = 3
     THREAD_SPACING = THREAD_WIDTH * 2 # Space between character threads
 
+    LOCATION_GAP = 2 # In thread widths
+    EDGE_OFFSET = LOCATION_GAP * THREAD_SPACING
+
+    TIME_GAP = 5 # Space between events horizontally
+    BASE_DURATION = 10 # Space events take up
+    EVENT_SPACE = TIME_GAP + BASE_DURATION
+
     # Knows how to render various event types symbolically in SVG
     class Symbols
       ASTERISK_SPOKES = 7
@@ -60,14 +67,42 @@ module Lachisis
 
         %{<path id="symbol_death_#{x}_#{y}" fill="none" stroke="black" stroke_width="2" d="#{path.join(' ')}"/>}
       end
+
+      DASH_RATIO = [5, 1, 3, 1, 2]
+      DASH_LENGTHS = DASH_RATIO.map do |relative|
+        relative * (Lachisis::SVG::BASE_DURATION.to_f / DASH_RATIO.sum)
+      end
+
+      def disappear(startX, y)
+        start_of_dash = true
+        x = startX
+
+        path = [*DASH_LENGTHS, 0].flat_map do |length|
+          action = start_of_dash ? ['M'] : []
+          segment = [*action, x,  y]
+          x += length
+          start_of_dash = !start_of_dash
+
+          segment
+        end
+        %{<path id="symbol_disappear_#{x}_#{y}" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
+      end
+
+      def appear(endX, y)
+        end_of_dash = true
+        x = endX
+
+        path = [*DASH_LENGTHS, 0].flat_map do |length|
+          action = end_of_dash ? ['M'] : []
+          segment = [*action, x,  y]
+          x -= length
+          end_of_dash = !end_of_dash
+
+          segment
+        end
+        %{<path id="symbol_appear_#{x}_#{y}" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
+      end
     end
-
-    LOCATION_GAP = 2 # In thread widths
-    EDGE_OFFSET = LOCATION_GAP * THREAD_SPACING
-
-    TIME_GAP = 5 # Space between events horizontally
-    BASE_DURATION = 10 # Space events take up
-    EVENT_SPACE = TIME_GAP + BASE_DURATION
 
     LABEL_OFFSET = THREAD_WIDTH
     FONT_SIZE = THREAD_SPACING
@@ -224,6 +259,10 @@ module Lachisis
           case event
           when :die
             xml_data << Symbols.new.death(x, y)
+          when :enter
+            xml_data << Symbols.new.appear(x, y)
+          when :exit
+            xml_data << Symbols.new.disappear(x, y)
           else
             $stderr.puts("No symbol available for event type #{event.inspect}")
           end

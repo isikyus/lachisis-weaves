@@ -1,7 +1,9 @@
 require 'simplecov'
 require "simplecov_json_formatter"
-SimpleCov.formatter = SimpleCov::Formatter::JSONFormatter
-SimpleCov.start
+SimpleCov.start do
+  enable_coverage :branch
+  formatter SimpleCov::Formatter::JSONFormatter if ENV['CI'] == 'true'
+end
 
 require 'byebug'
 

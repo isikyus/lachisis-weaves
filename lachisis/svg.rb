@@ -88,7 +88,7 @@ module Lachisis
         %{<path id="symbol_disappear_#{x}_#{y}" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
       end
 
-      def appear(endX, y)
+      def arrive(endX, y)
         end_of_dash = true
         x = endX
 
@@ -272,7 +272,7 @@ module Lachisis
           when :die
             xml_data << Symbols.new.death(x, y)
           when :enter
-            xml_data << Symbols.new.appear(x, y)
+            xml_data << Symbols.new.arrive(x, y)
           when :exit
             xml_data << Symbols.new.disappear(x, y)
           else

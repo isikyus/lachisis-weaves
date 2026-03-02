@@ -14,7 +14,7 @@
   <?lachisis present:minotaur ?>
   <?lachisis location:travel-quarter present:wildflower time:-1 time:0 ?>
   <?lachisis location:wildflowers_house enter:wildflower ?>
-  <?lachisis enter:katraktes enter:wildflower location:mile ?>
+  <?lachisis appear:katraktes enter:wildflower location:mile ?>
   <?lachisis enter:aristechon ?>
   <?lachisis enter:cordwynn_zandt ?>
   <?lachisis present:chapton location:mile time:-1 time:0 ?>
@@ -25,10 +25,10 @@
   <?lachisis location:jethans_place enter:jethan time:0 ?>
   <?lachisis location:docks enter:delph enter:lyssa_thane enter:jethan ?>
   <?lachisis location:peak enter:jethan time:1.5 ?>
-  <?lachisis present:argus ?>
-  <?lachisis present:jerome ?>
+  <?lachisis appear:argus ?>
+  <?lachisis appear:jerome ?>
   <?lachisis enter:jethan location:noble_quarter time:1.6 ?>
-  <?lachisis present:thane_the_elder location:thanes_house enter:jethan ?>
+  <?lachisis appear:thane_the_elder location:thanes_house enter:jethan ?>
   <?lachisis location:great_pillar enter:jethan enter:thane_the_elder ?>
   <?lachisis enter:pan ?>
   <?lachisis time:1.9 enter:jethan location:great_pillar ?>

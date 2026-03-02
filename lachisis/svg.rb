@@ -190,21 +190,19 @@ module Lachisis
         start, *_rest = *path_points
         paths = [[start[0..1]]]
         symbols = []
-        drawing = (path_points[0][2] != :present)
+        drawing = true
         path_points.each_cons(2).map do |segment|
           p0, p1 = *segment
           x0, y0, _ = *p0
           x1, y1, event = *p1
 
           # Only consider 'enter' events worth a symbol if we were previously blanked.
-          event = :present if drawing && event == :enter
-          symbols << [x1, y1, event] unless event == :present
+          event = :appear if drawing && event == :enter
+          symbols << [x1, y1, event] unless [:present, :appear].include?(event)
 
           if event == :exit
             drawing = false
             distance_until_relabel = RELABEL_INTERVAL - relabel_offset
-            next
-          elsif event == :present && !drawing
             next
           elsif drawing == false
             drawing = true

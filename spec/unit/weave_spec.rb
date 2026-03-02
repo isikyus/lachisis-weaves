@@ -86,7 +86,7 @@ RSpec.describe Lachisis::Weave do
         weave.add(10, 0, Lachisis::Event.new('home', { alice: :present, bob: :present }))
         weave.add(10, 0, Lachisis::Event.new('delphi', { sue: :present }))
         weave.add(20, 0, Lachisis::Event.new('delphi', { alice: :arrive, oracle: :present }))
-        weave.add(20, 5, Lachisis::Event.new('home', { alice: :arrive, cathy: :present, sue: :arrive }))
+        weave.add(20, 5, Lachisis::Event.new('home', { alice: :arrive, cathy: :appear, sue: :arrive }))
       end
 
       specify 'assumes people stay in place after their last event' do
@@ -114,7 +114,7 @@ RSpec.describe Lachisis::Weave do
         expect(start_at_delphi.characters).to eq Set[:oracle, :sue]
 
         expect(start_at_home.location).to eq 'home'
-        expect(start_at_home.characters).to eq Set[:alice, :bob, :cathy]
+        expect(start_at_home.characters).to eq Set[:alice, :bob]
       end
 
       specify 'between events at different locations, assumes people travel to their next "present" location' do
@@ -133,7 +133,7 @@ RSpec.describe Lachisis::Weave do
         expect(middle_at_delphi.characters).to eq Set[:oracle, :alice]
 
         expect(middle_at_home.location).to eq 'home'
-        expect(middle_at_home.characters).to eq Set[:bob, :cathy, :sue]
+        expect(middle_at_home.characters).to eq Set[:bob, :sue]
       end
 
       specify 'between events at different locations, assumes people do not yet travel to an "arrive" location' do
@@ -152,7 +152,7 @@ RSpec.describe Lachisis::Weave do
         expect(middle_at_delphi.characters).to eq Set[:oracle, :sue, :alice]
 
         expect(middle_at_home.location).to eq 'home'
-        expect(middle_at_home.characters).to eq Set[:bob, :cathy]
+        expect(middle_at_home.characters).to eq Set[:bob]
       end
     end
 

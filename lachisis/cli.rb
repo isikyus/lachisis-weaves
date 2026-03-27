@@ -29,6 +29,20 @@ module Lachisis
       die(e.message)
     end
 
+    # @api private
+    def weave_from_xml(filename)
+      weave = nil
+
+      # TODO: could move these two lines into Lachisis::Parser
+      sax_processor = Lachisis::Parser.new { |w| weave = w }
+      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
+      sax_parser.parse(filename)
+
+      raise 'Expected callback to set weave' unless weave
+
+      weave
+    end
+
     private
 
     def option_parser
@@ -50,19 +64,6 @@ module Lachisis
         die("#{option_parser.help} \n\n" \
             "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
       end
-    end
-
-    def weave_from_xml(filename)
-      weave = nil
-
-      # TODO: could move these two lines into Lachisis::Parser
-      sax_processor = Lachisis::Parser.new { |w| weave = w }
-      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
-      sax_parser.parse(filename)
-
-      raise 'Expected callback to set weave' unless weave
-
-      weave
     end
 
     # @return [#to_proc]

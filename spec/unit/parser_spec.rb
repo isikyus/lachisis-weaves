@@ -51,5 +51,26 @@ RSpec.describe Lachisis::Parser do
                                  romeo: :enter)
       end
     end
+
+    context 'that starts without a location' do
+      let(:xml) do
+        <<~XML
+          <?xml version="1.0" ?>
+          <tag>
+            <?lachisis present:juliet ?>
+            <?lachisis enter:romeo ?>
+          </tag>
+        XML
+      end
+
+      # TODO: code under test should probably live in Parser
+      let(:cli) { Lachisis::CLI.new }
+
+      specify 'fails fast' do
+        expect do
+          weave
+        end.to raise_error(/Need location/)
+      end
+    end
   end
 end

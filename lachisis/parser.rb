@@ -118,8 +118,11 @@ module Lachisis
                              time: t)
         end
       else
+        here = location || @current&.location
+        raise Error, 'Need location to start weave' unless here
+
         @minor_time += 1
-        add_event(new_actions, location || @current.location)
+        add_event(new_actions, here)
       end
     end
 

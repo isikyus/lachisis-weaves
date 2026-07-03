@@ -29,7 +29,7 @@ RSpec.describe Lachisis::Parser do
       end
 
       # TODO: code under test should probably live in Parser
-      let(:cli) { Lachisis::CLI.new }
+      let(:cli) { Lachisis::CLI.new(%w[a.xml]) }
 
       specify 'parses it' do
         first, second, *rest = weave.frames
@@ -64,7 +64,7 @@ RSpec.describe Lachisis::Parser do
       end
 
       # TODO: code under test should probably live in Parser
-      let(:cli) { Lachisis::CLI.new }
+      let(:cli) { Lachisis::CLI.new(%w[a.xml]) }
 
       specify 'fails fast' do
         expect do

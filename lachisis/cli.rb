@@ -15,11 +15,11 @@ module Lachisis
       new.run
     end
 
-    def initialize
-      option_parser.parse!
+    def initialize(cli_args = ARGV)
+      option_parser.parse!(cli_args)
 
       # Filename is a non-option argument
-      @xml_file = filename_from_argv
+      @xml_file = filename_from_argv(cli_args)
     end
 
     def run
@@ -57,12 +57,12 @@ module Lachisis
       end
     end
 
-    def filename_from_argv
-      if ARGV.length == 1
-        ARGV[0]
+    def filename_from_argv(cli_args)
+      if cli_args.length == 1
+        cli_args[0]
       else
         die("#{option_parser.help} \n\n" \
-            "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
+            "Expected 1 non-option arg; got #{cli_args.length}: #{cli_args.inspect}")
       end
     end
 

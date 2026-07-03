@@ -206,6 +206,7 @@ module Lachisis
             next
           elsif drawing == false
             drawing = true
+            paths.last << [x0, y0]
             paths.last << 'M'
           end
 

@@ -170,5 +170,66 @@ RSpec.describe Lachisis::SVG do
         expect(y1b).to eq y2a
       end
     end
+
+    context 'with a character who disappears and then reappears' do
+      let(:weave) do
+        weave = Lachisis::Weave.new
+        weave.add(100, 10, Lachisis::Event.new('somewhere', prodigal: :present))
+        weave.add(100, 20, Lachisis::Event.new('somewhere', prodigal: :exit))
+        weave.add(100, 30, Lachisis::Event.new('somewhere', faithful: :present))
+        weave.add(100, 40, Lachisis::Event.new('somewhere', prodigal: :enter))
+        weave
+      end
+
+      before do
+        allow(layout).to receive(:layout)
+                           .and_return([['somewhere'], [:faithful, :prodigal]])
+      end
+
+      specify 'exports SVG to a text file for comparison' do
+        File.open(File.join(File.dirname(File.dirname(__FILE__)), 'output', 'prodigal.svg'), 'w') do |f|
+          f.puts svg_xml
+        end
+      end
+
+      specify 'generates a solid line for a consistently-present character' do
+        thread = svg_xml.css('#thread_faithful_0')
+        expect(thread.length).to eq 1
+
+        coords = thread[0]['d'].match(/M (\d+) (\d+) (\d+) (\d+)/)
+        expect(coords).not_to be_nil
+
+        _, x1, y1, x2, y2 = *coords.to_a.map(&:to_f)
+
+        # Horizontal distance between frames
+        expect(x2 - x1).to be >= 10
+
+        # Line is horizontal (no vertical component)
+        expect([y1, y2].uniq).to eq [y1]
+      end
+
+      specify 'generates two separate lines for a wandering character' do
+        thread = svg_xml.css('#thread_prodigal_0')
+        expect(thread.length).to eq 1
+
+        coords = thread[0]['d']
+          .scan(/M ((\d+ \d+\s*)+)/)
+          .map { |path| path[0].scan(/\d+/).map(&:to_i) }
+        expect(coords.length).to eq 2
+        expect(coords[0]).not_to be_nil
+        expect(coords[1]).not_to be_nil
+
+        x1, y1, x2, y2 = *coords[0].to_a.map(&:to_f)
+        x3, y3, x4, y4 = *coords[1].to_a.map(&:to_f)
+
+        # Horizontal distance between frames
+        expect(x2 - x1).to be >= 10
+        expect(x3 - x2).to be >= 10
+        expect(x4 - x3).to be >= 10
+
+        # Line is horizontal (no vertical component)
+        expect([y1, y2, y3, y4].uniq).to eq [y1]
+      end
+    end
   end
 end

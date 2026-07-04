@@ -31,6 +31,13 @@ RSpec.describe Lachisis::SVG do
           .and_return([['somewhere'], [:alice]])
       end
 
+      # TODO: decorate RSpec failures to do this?
+      specify 'exports SVG to a text file for comparison' do
+        File.open(File.join(File.dirname(File.dirname(__FILE__)), 'output', 'basic.svg'), 'w') do |f|
+          f.puts svg_xml
+        end
+      end
+
       specify 'generates a horizontal line' do
         thread = svg_xml.css('#thread_alice_0')
         expect(thread.length).to eq 1

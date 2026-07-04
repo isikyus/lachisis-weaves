@@ -48,7 +48,7 @@ module Lachisis
 
       # TODO: consider storing these pre-rendered?
       # @return [String] SVG tag.
-      def death(x, y)
+      def death(x, y, character)
         path = []
         ASTERISK_SPOKES.times do |spoke|
           # Offset 180 degrees so the first spoke lands on top of the incoming line.
@@ -65,15 +65,15 @@ module Lachisis
           ]
         end
 
-        %{<path id="symbol_death_#{x}_#{y}" fill="none" stroke="black" stroke_width="2" d="#{path.join(' ')}"/>}
+        %{<path id="symbol_death_#{character}_#{x}_#{y}" class="symbol symbol_#{character} symbol-death" fill="none" stroke="black" stroke_width="2" d="#{path.join(' ')}"/>}
       end
 
-      DASH_RATIO = [5, 1, 3, 1, 2]
+      DASH_RATIO = [5, 1, 3, 1, 2, 5]
       DASH_LENGTHS = DASH_RATIO.map do |relative|
         relative * (Lachisis::SVG::BASE_DURATION.to_f / DASH_RATIO.sum)
       end
 
-      def disappear(startX, y)
+      def disappear(startX, y, character)
         start_of_dash = true
         x = startX
 
@@ -85,10 +85,10 @@ module Lachisis
 
           segment
         end
-        %{<path id="symbol_disappear_#{x}_#{y}" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
+        %{<path id="symbol_disappear_#{character}_#{x}_#{y}" class="symbol symbol_#{character} symbol-disappear" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
       end
 
-      def arrive(endX, y)
+      def arrive(endX, y, character)
         end_of_dash = true
         x = endX
 
@@ -100,7 +100,19 @@ module Lachisis
 
           segment
         end
-        %{<path id="symbol_appear_#{x}_#{y}" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
+        %{<path id="symbol_appear_#{character}_#{x}_#{y}" class="symbol symbol_#{character} symbol-appear" fill="none" stroke="black" stroke_width="#{Lachisis::SVG::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
+      end
+
+      # TODO: extract subclasses that can calculate this
+      def spacing(symbol)
+        case symbol
+        when :arrive, :disappear
+          DASH_LENGTHS.sum + (2 * THREAD_WIDTH)
+        when :death
+          (2 * SCALE) + (2 * THREAD_WIDTH)
+        else
+          raise "Unknown symbol #{symbol}"
+        end
       end
     end
 
@@ -134,10 +146,41 @@ module Lachisis
       #$stderr.puts "Crossing number: #{Layout::Crossings.count(weave, location_order, characters).total}"
       $stderr.puts "Location order: #{location_order.inspect}"
 
+      # The same, but for vertical space between events. This needs to be big
+      # enough to fit any symbols or angled transition lines
+      cumulative_offset  = 0
+      carried_over = 0
+      event_spacing = weave.frames.map do |frame|
+        actions = frame.events.map(&:actions).flat_map(&:values)
+        before_spacings = actions
+                            .select { [:enter].include?(_1) }
+                            .uniq
+                            .map { Symbols.new.spacing(:arrive) }
+        offset = BASE_DURATION + carried_over + [0, *before_spacings].max
+
+        # Spacing for "leave" events apply to the _next_ event space.
+        carried_over = actions
+                         .select { [:die, :exit].include?(_1) }
+                         .uniq
+                         .map do |action|
+                           case action
+                           when :die,
+                             Symbols.new.spacing(:death)
+                           when :exit
+                             Symbols.new.spacing(:disappear)
+                           else
+                             raise 'Unknown leave event type'
+                           end
+                         end.max || 0
+
+        cumulative_offset += offset
+        cumulative_offset
+      end
+
       # TODO: could use Nokogiri here
 
       metrics = Metrics.new(
-        diagram_width: weave.frames.length * EVENT_SPACE,
+        diagram_width: cumulative_offset,
         # HACK: should really use font metrics or similar
         max_name_size: characters.map(&:length).max * FONT_SIZE
       )
@@ -177,7 +220,7 @@ module Lachisis
       relabel_offset = 0
       threads.each do |character, events|
 
-        path = events_to_points(character, events, metrics, characters, location_spacing)
+        path = events_to_points(character, events, metrics, characters, location_spacing, event_spacing)
         path_points = simplify(path)
 
         # Insert labels at intervals in straight lines
@@ -271,11 +314,11 @@ module Lachisis
 
           case event
           when :die
-            xml_data << Symbols.new.death(x, y)
+            xml_data << Symbols.new.death(x, y, character)
           when :enter
-            xml_data << Symbols.new.arrive(x, y)
+            xml_data << Symbols.new.arrive(x, y, character)
           when :exit
-            xml_data << Symbols.new.disappear(x, y)
+            xml_data << Symbols.new.disappear(x, y, character)
           else
             $stderr.puts("No symbol available for event type #{event.inspect}")
           end
@@ -294,10 +337,10 @@ module Lachisis
 
     private
 
-    def events_to_points(character, events, metrics, characters, location_spacing)
+    def events_to_points(character, events, metrics, characters, location_spacing, event_spacing)
       events.flat_map do |index_and_event|
         index_and_event => {index:, event:}
-        x = metrics.event_name_offset(index)
+        x = event_spacing[index]
 
         # Allocate character rows based on the global sorted list, so they
         # don't cross over within events

@@ -25,7 +25,7 @@ module Lachisis
       end
 
       # TODO: what actually is this?
-      def event_name_offset(index)
+      def location_name_offset(index)
         @max_name_size + (index * EVENT_SPACE)
       end
     end
@@ -211,7 +211,7 @@ module Lachisis
           .detect { |f, _i| f.events.map(&:location).include?(loc) }
 
         label_y = y_position + (location_sizes[loc] * THREAD_SPACING / 2.0)
-        label_x = metrics.event_name_offset(first_frame_index)
+        label_x = event_spacing.first
         xml_data << %{<text x="#{label_x - LABEL_OFFSET}" y="#{label_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE * 2}" opacity="0.5">#{loc}</text> }
       end
 

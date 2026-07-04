@@ -57,7 +57,7 @@ RSpec.describe Lachisis::SVG do
       specify 'labels it with the character name' do
         thread = svg_xml.css('#thread_alice_0')
         coords = thread[0]['d'].match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)
-        _, x1, y1, x2, y2 = *coords
+        x1, y1, x2, y2 = *coords[1..].map(&:to_f)
 
         labels = svg_xml.xpath("//xmlns:text[text()='alice']")
         expect(labels.length).to eq 2
@@ -68,25 +68,23 @@ RSpec.describe Lachisis::SVG do
         right_label = svg_xml.xpath("//xmlns:text[text()='alice'][@text-anchor='start']")
         expect(right_label.length).to eq 1
 
-        expect(left_label[0]['x']).to be < x1
-        expect(left_label[0]['y']).to eq y1
+        expect(left_label[0]['x'].to_f).to be < x1
+        expect(left_label[0]['y'].to_f).to eq y1
 
-        expect(right_label[0]['x']).to be > x2
-        expect(right_label[0]['y']).to eq y2
+        expect(right_label[0]['x'].to_f).to be > x2
+        expect(right_label[0]['y'].to_f).to eq y2
       end
 
-      pending 'work out how I broke this' do
-        specify 'labels the location' do
-          thread = svg_xml.css('#thread_alice_0')
-          coords = thread[0]['d'].match(/M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/)
-          _, x1, y1, _x2, _y2 = *coords
+      specify 'labels the location' do
+        thread = svg_xml.css('#thread_alice_0')
+        coords = thread[0]['d'].match(/M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/)
+        x1, y1, _x2, _y2 = *coords[1..].map(&:to_f)
 
-          location_label = svg_xml.xpath('//xmlns:text[text()="somewhere"]')
-          expect(location_label.length).to eq 1
+        location_label = svg_xml.xpath('//xmlns:text[text()="somewhere"]')
+        expect(location_label.length).to eq 1
 
-          expect(location_label[0]['x'].to_f).to be < x1
-          expect(location_label[0]['y'].to_f).to be > y1
-        end
+        expect(location_label[0]['x'].to_f).to be < x1
+        expect(location_label[0]['y'].to_f).to be > y1
       end
     end
 

@@ -66,7 +66,7 @@ RSpec.describe Lachisis::SVG::Symbols do
       start_x = bounds_x.min
       centre_y = bounds_y.minmax.sum / 2
 
-      delta = Lachisis::SVG::THREAD_WIDTH
+      delta = Lachisis::SVG::Constants::THREAD_WIDTH
       expect(start_x).to be_within(delta).of(x)
       expect(centre_y).to be_within(delta).of(y)
     end
@@ -87,7 +87,7 @@ RSpec.describe Lachisis::SVG::Symbols do
       end_x = bounds_x.max
       centre_y = bounds_y.minmax.sum / 2
 
-      delta = Lachisis::SVG::THREAD_WIDTH
+      delta = Lachisis::SVG::Constants::THREAD_WIDTH
       expect(end_x).to be_within(delta).of(x)
       expect(centre_y).to be_within(delta).of(y)
     end

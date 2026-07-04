@@ -10,6 +10,8 @@ require 'nokogiri'
 
 RSpec.describe Lachisis::SVG do
   include SvgHelpers
+  NUM = SvgHelpers::NUM
+
   subject(:svg) { Lachisis::SVG.new(layout) }
 
   let(:layout) do
@@ -201,8 +203,6 @@ RSpec.describe Lachisis::SVG do
           f.puts svg_xml
         end
       end
-
-      NUM = /[[:digit:]]+(?:\.[[:digit:]]+)?/
 
       specify 'does not overlap characters and symbols' do
         thread1 = svg_xml.css('#thread_faithful_0')

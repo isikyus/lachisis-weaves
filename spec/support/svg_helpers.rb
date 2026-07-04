@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 module SvgHelpers
-  NUM = /[[:digit:]]+(?:\.[[:digit:]]+)?/
+  NUM = /-?[[:digit:]]+(?:\.[[:digit:]]+)?/
 
   # @return [<Range,Range>] X and Y dimensions of the given SVG path.
   #         Assumes no curves - i.e. all extreme  points are explicit path
   #         points.
   def bounding_box(symbol)
-    points = symbol['d']
+    points = symbol['d'].tap { pp _1 }
              .scan(/M ((#{NUM} #{NUM}\s*)+)/)
              .map do |path|
                path[0].scan(/(#{NUM}) (#{NUM})/).map { |x, y| [x, y] }
@@ -23,8 +23,8 @@ module SvgHelpers
     max_x += half_stroke
     max_y += half_stroke
 
-    x_range = min_x...max_x
-    y_range = min_y...max_y
+    x_range = min_x..max_x
+    y_range = min_y..max_y
 
     [x_range, y_range]
   end

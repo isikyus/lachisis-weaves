@@ -267,6 +267,7 @@ RSpec.describe Lachisis::SVG do
         thread = svg_xml.css('#thread_prodigal_0')
         expect(thread.length).to eq 1
 
+        # TODO: probably want a helper for this?
         coords = thread[0]['d']
           .scan(/M ((#{NUM} #{NUM}\s*)+)/)
           .map { |path| path[0].scan(NUM).map(&:to_i) }

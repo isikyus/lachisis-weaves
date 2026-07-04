@@ -226,7 +226,6 @@ module Lachisis
         # Insert labels at intervals in straight lines
         relabel_offset = (relabel_offset * PHI) % RELABEL_INTERVAL
         distance_until_relabel = RELABEL_INTERVAL - relabel_offset
-        last_point = nil
         # HACK: again, should be using font metrics
         label_length = FONT_SIZE * character.length
 

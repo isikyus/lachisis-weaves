@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../support/svg_helpers'
+
 require 'lachisis/event'
 require 'lachisis/weave'
 require 'lachisis/svg'
@@ -7,6 +9,7 @@ require 'lachisis/svg'
 require 'nokogiri'
 
 RSpec.describe Lachisis::SVG do
+  include SvgHelpers
   subject(:svg) { Lachisis::SVG.new(layout) }
 
   let(:layout) do
@@ -219,23 +222,7 @@ RSpec.describe Lachisis::SVG do
         # expect(coords2).not_to be_nil
 
         svg_xml.css('.symbol_prodigal').each do |symbol|
-          points = symbol['d']
-            .scan(/M (([\d.]+ [\d.]+\s*)+)/)
-            .map do |path|
-              path[0].scan(/([\d.]+) ([\d.]+)/).map { |x, y| [x, y] }
-            end
-            .flatten(1)
-          minX, maxX = points.map(&:first).map(&:to_f).minmax
-          minY, maxY = points.map(&:last).map(&:to_f).minmax
-
-          half_stroke = symbol['stroke_width'].to_f / 2
-          minX -= half_stroke
-          minY -= half_stroke
-          maxX += half_stroke
-          maxY += half_stroke
-
-          x_range = minX...maxX
-          y_range = minY...maxY
+          x_range, y_range = bounding_box(symbol)
 
           # TODO: probably need a custom matcher, SVG lib, or similar
           id = symbol['id']

@@ -29,7 +29,7 @@ module Lachisis
       threads, location_sizes = build_threads(weave)
       location_order, characters = @layout.layout(weave)
 
-      $stderr.puts "Location order: #{location_order.inspect}"
+      debug_log "Location order: #{location_order.inspect}"
 
       # The same, but for vertical space between events. This needs to be big
       # enough to fit any symbols or angled transition lines
@@ -70,24 +70,26 @@ module Lachisis
         max_name_size: characters.map(&:length).max * FONT_SIZE
       )
 
-      # Calculate where (horizontal row) to each location fits. Assume order stays the same.
-      # Start with a bit of space so the first line is readable-ish
+      # Calculate where (horizontal row) to each location fits. Assumes order
+      # stays the same.
 
+      # Start with a bit of space so the first line is readable-ish
       location_spacing = {}
-      location_sizes.sort_by { |l, _sz| location_order.index(l) }.each do |location, char_count|
+      location_sizes.sort_by do |l, _sz|
+        location_order.index(l)
+      end.each do |location, char_count|
         start_y = metrics.last_location_end + EDGE_OFFSET
         metrics.last_location_end = start_y + char_count * THREAD_SPACING
 
         location_spacing[location] = start_y
       end
 
-      $stderr.puts(
+      debug_log(
         location_spacing.map do |location, space|
-          '%<indent>5d (%<index>2d) %<location>s' % {
-            indent: space,
-            index: location_order.index(location) || -1,
-            location: location.inspect
-          }
+          format('%<indent>5d (%<index>2d) %<location>s',
+                 indent: space,
+                 index: location_order.index(location) || -1,
+                 location: location.inspect)
         end
       )
 
@@ -100,7 +102,7 @@ module Lachisis
       location_spacing.each do |loc, y_position|
         label_y = y_position + (location_sizes[loc] * THREAD_SPACING / 2.0)
         label_x = event_spacing.first
-        xml_data << %{
+        xml_data << %(
           <text
             x="#{label_x - LABEL_OFFSET}"
             y="#{label_y}"
@@ -109,7 +111,7 @@ module Lachisis
             font-size="#{FONT_SIZE * 2}"
             opacity="0.5"
           >#{loc}</text>
-        }
+        )
       end
 
       # Draw character threads
@@ -140,9 +142,9 @@ module Lachisis
           x0, y0, = *p0
           x1, y1, event = *p1
 
-          # Only consider 'enter' events worth a symbol if we were previously blanked.
+          # Only display a symbol for 'enter' if we were previously blanked.
           event = :appear if drawing && event == :enter
-          symbols << [x1, y1, event] unless %i[present, appear].include?(event)
+          symbols << [x1, y1, event] unless %i[present appear].include?(event)
 
           if event == :exit
             drawing = false
@@ -178,7 +180,16 @@ module Lachisis
             # Rotate 90 degrees to ??? TODO: amn't I not doing that any more?
             label_angle = line_angle
             label_angle_degrees = 360 * label_angle / (2 * Math::PI)
-            xml_data << %{<text x="#{label_x}" y="#{label_y}" transform="rotate(#{label_angle_degrees} #{label_x} #{label_y})" text-anchor="middle" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
+            xml_data << %{
+              <text
+                x="#{label_x}"
+                y="#{label_y}"
+                transform="rotate(#{label_angle_degrees} #{label_x} #{label_y})"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size="#{FONT_SIZE}"
+              >#{character}</text>
+            }
 
             # Start new path after the label
             paths << []
@@ -198,7 +209,15 @@ module Lachisis
         # Create multiple tags for each path.
         # TODO: consider having one path with gaps instead?
         paths.each_with_index do |path, index|
-          xml_data << %{<path id="thread_#{character}_#{index}" fill="none" stroke="black" stroke_width="3" d="M #{path.flatten.join(' ')}"/>}
+          xml_data << %(
+            <path
+              id="thread_#{character}_#{index}"
+              fill="none"
+              stroke="black"
+              stroke_width="3"
+              d="M #{path.flatten.join(' ')}"
+            />
+          )
         end
 
         symbols.each do |point_event|
@@ -211,13 +230,29 @@ module Lachisis
           when :exit
             xml_data << Symbols.new.disappear(x, y, character)
           else
-            $stderr.puts("No symbol available for event type #{event.inspect}")
+            debug_log("No symbol available for event type #{event.inspect}")
           end
         end
 
         start_x, start_y, *, end_x, end_y, _ = *path_points.flatten
-        xml_data << %{<text x="#{start_x - LABEL_OFFSET}" y="#{start_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
-        xml_data << %{<text x="#{end_x + LABEL_OFFSET}" y="#{end_y}" text-anchor="start" dominant-baseline="middle" font-size="#{FONT_SIZE}">#{character}</text>}
+        xml_data << %(
+          <text
+            x="#{start_x - LABEL_OFFSET}"
+            y="#{start_y}"
+            text-anchor="end"
+            dominant-baseline="middle"
+            font-size="#{FONT_SIZE}"
+          >#{character}</text>
+        )
+        xml_data << %(
+          <text
+            x="#{end_x + LABEL_OFFSET}"
+            y="#{end_y}"
+            text-anchor="start"
+            dominant-baseline="middle"
+            font-size="#{FONT_SIZE}"
+          >#{character}</text>
+        )
       end
 
       xml_data << '</svg>'
@@ -227,7 +262,11 @@ module Lachisis
 
     private
 
-    def events_to_points(character, events, characters, location_spacing, event_spacing)
+    def events_to_points(character,
+                         events,
+                         characters,
+                         location_spacing,
+                         event_spacing)
       events.flat_map do |index_and_event|
         index_and_event => {index:, event:}
         x = event_spacing[index]
@@ -264,10 +303,11 @@ module Lachisis
       ]
     end
 
-    # @param p1, p1, p3 [Array<Integer, Object>] Possibly-annotated points,
-    #                   represented as arrays [x, y, ...]
-    def horizontally_collinear(p0, p1, p2)
-      p0[1] == p1[1] && p1[1] == p2[1]
+    # @param point0, point1, point2 [Array<Integer, Object>] Possibly-annotated
+    #                   points, represented as arrays [x, y, ...]
+    def horizontally_collinear(point0, point1, point2)
+      point0[1] == point1[1] &&
+        point1[1] == point2[1]
     end
 
     def build_threads(weave)
@@ -276,21 +316,31 @@ module Lachisis
 
       weave.frames.each_with_index do |frame, index|
         frame.events.each do |event|
-
           # TODO: could use Weave#threads here?
           event.characters.each do |c|
             threads[c] ||= []
-            threads[c] << { index: index, event: event }
+            threads[c] << { index:, event: }
           end
 
-          location_size = [location_sizes[event.location], event.characters.length]
-              .compact
-              .max
+          location_size = [
+            location_sizes[event.location],
+            event.characters.length
+          ].compact.max
+
           location_sizes[event.location] = location_size
         end
       end
 
       [threads, location_sizes]
+    end
+
+    def debug_log(message = nil, &block)
+      return unless @debug
+
+      message ||= block.call
+      # rubocop:disable Style/StderrPuts
+      $stderr.puts(message)
+      # rubocop:enable Style/StderrPuts
     end
   end
 end

@@ -1,2 +1,11 @@
 require:
   - rubocop-rspec
+
+Layout/LineLength:
+  Max: 80
+
+Naming/MethodParameterName:
+  AllowedNames:
+    # TODO: may be better to use a point library instead
+    - x
+    - y

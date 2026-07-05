@@ -306,5 +306,74 @@ RSpec.describe Lachisis::SVG do
         expect([y1, y2, y3, y4].uniq).to eq [y1]
       end
     end
+
+    context 'with a character who appears from nowhere' do
+      let(:weave) do
+        weave = Lachisis::Weave.new
+        weave.add(100, 10, Lachisis::Event.new('somewhere', local: :present))
+        weave.add(100, 20, Lachisis::Event.new('somewhere', outsider: :appear))
+        weave.add(100, 30, Lachisis::Event.new('somewhere', local: :present))
+        weave.add(100, 40, Lachisis::Event.new('somewhere', outsider: :present))
+        weave
+      end
+
+      before do
+        allow(layout).to receive(:layout)
+                           .and_return([%w[somewhere nowhere],
+                                        %i[local outsider]])
+      end
+
+      specify 'exports SVG to a text file for comparison' do
+        File.open(
+          File.join(
+            File.dirname(File.dirname(__FILE__)),
+            'output',
+            'appearance.svg'
+          ),
+          'w'
+        ) do |f|
+          f.puts svg_xml
+        end
+      end
+
+      specify 'generates smooth transitions, not vertical lines' do
+        thread1 = svg_xml.css('#thread_local_0')
+        expect(thread1.length).to eq 1
+
+        # TODO: probably want a helper for this?
+        coords1 = thread1[0]['d']
+                   .scan(/M ((#{num} #{num}\s*)+)/).tap { pp _1 }
+                   .map do |path|
+                      path[0]
+                        .scan(/(#{num}) (#{num})/).tap { pp _1 }
+                        .map { _1.map(&:to_f) }
+                    end
+                   .flatten(1)
+
+        thread2 = svg_xml.css('#thread_outsider_0')
+        expect(thread2.length).to eq 1
+
+        # TODO: probably want a helper for this?
+        coords2 = thread2[0]['d']
+                   .scan(/M ((#{num} #{num}\s*)+)/).tap { pp _1 }
+                   .map do |path|
+                      path[0]
+                        .scan(/(#{num}) (#{num})/).tap { pp _1 }
+                        .map { _1.map(&:to_f) }
+                    end
+                   .flatten(1)
+pp coords1, coords2
+
+
+        expect(coords1).not_to be_nil
+        coords1.each_slice(2) do |point1, point2|
+          x1, y1 = point1
+          x2, y2 = point2
+
+          slope = (y2 - y1) / (x2 - x1)
+          expect(slope).to be < 10
+        end
+      end
+    end
   end
 end

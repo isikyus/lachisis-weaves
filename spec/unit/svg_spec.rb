@@ -289,7 +289,7 @@ RSpec.describe Lachisis::SVG do
         # TODO: probably want a helper for this?
         coords = thread[0]['d']
                  .scan(/M ((#{num} #{num}\s*)+)/)
-                 .map { |path| path[0].scan(num).map(&:to_i) }
+                 .map { |path| path[0].scan(num).map(&:to_f) }
         expect(coords.length).to eq 2
         expect(coords[0]).not_to be_nil
         expect(coords[1]).not_to be_nil

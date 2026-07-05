@@ -29,8 +29,8 @@ RSpec.describe Lachisis::Layout::Crossings do
 
   describe '#count' do
     context 'with a layout that does not cross over' do
-      let(:location_order) { %w[ A C B D ] }
-      let(:character_order) { %i[ one two three four] }
+      let(:location_order) { %w[A C B D] }
+      let(:character_order) { %i[one two three four] }
 
       specify 'counts 0 crossings' do
         expect(crossings.total).to eq 0
@@ -46,8 +46,8 @@ RSpec.describe Lachisis::Layout::Crossings do
     end
 
     context 'with a layout that crosses over characters within a location' do
-      let(:location_order) { %w[ A C B D ] }
-      let(:character_order) { %i[ two one three four ] }
+      let(:location_order) { %w[A C B D] }
+      let(:character_order) { %i[two one three four] }
 
       specify 'counts 1 crossing' do
         expect(crossings.total).to eq 1
@@ -63,8 +63,8 @@ RSpec.describe Lachisis::Layout::Crossings do
     end
 
     context 'with a layout that crosses over locations and characters' do
-      let(:location_order) { %w[ A B C D ] }
-      let(:character_order) { %i[ two one three four ] }
+      let(:location_order) { %w[A B C D] }
+      let(:character_order) { %i[two one three four] }
 
       specify 'counts 2 crossings' do
         expect(crossings.total).to eq 2
@@ -97,11 +97,11 @@ RSpec.describe Lachisis::Layout::Crossings do
     # C         \-- 2 C
     #
     # D 4 --------- 4 D
-    let(:location_order) { %w[ A B C D ] }
-    let(:character_order) { %i[ two one three four ] }
+    let(:location_order) { %w[A B C D] }
+    let(:character_order) { %i[two one three four] }
 
     context 'swapping characters' do
-      let(:after_swap) { crossings.swap(nil, %i[ two one ]) }
+      let(:after_swap) { crossings.swap(nil, %i[two one]) }
 
       specify 'updates crossing counts' do
         expect(after_swap.total).to eq 1
@@ -121,7 +121,7 @@ RSpec.describe Lachisis::Layout::Crossings do
     end
 
     context 'swapping locations' do
-      let(:after_swap) { crossings.swap(%w[ A B ], nil) }
+      let(:after_swap) { crossings.swap(%w[A B], nil) }
 
       specify 'updates crossing counts' do
         expect(after_swap.total).to eq 1
@@ -151,7 +151,7 @@ RSpec.describe Lachisis::Layout::Crossings do
       # D 4 ----|---- 4 D
       #         |
       # C       \---- 2 C
-      let(:after_swap) { crossings.swap(%w[ D C ], %i[ two one ]) }
+      let(:after_swap) { crossings.swap(%w[D C], %i[two one]) }
 
       specify 'updates crossing counts' do
         expect(after_swap.total).to eq 2
@@ -183,7 +183,7 @@ RSpec.describe Lachisis::Layout::Crossings do
       # C         \-- 2 C
       #
       # B 3 --------- 3 B
-      let(:after_swap) { crossings.swap(%w[ D B ], nil) }
+      let(:after_swap) { crossings.swap(%w[D B], nil) }
 
       specify 'updates crossing counts' do
         expect(after_swap.total).to eq 2
@@ -222,8 +222,8 @@ RSpec.describe Lachisis::Layout::Crossings do
         weave.add(0, 0, Lachisis::Event.new('A', { five: :arrive }))
         weave.add(0, 1, Lachisis::Event.new('B', { five: :arrive }))
       end
-      let(:location_order) { %w[ A B C D ] }
-      let(:character_order) { %i[ two one three four five ] }
+      let(:location_order) { %w[A B C D] }
+      let(:character_order) { %i[two one three four five] }
 
       # Layout after swap
       #
@@ -237,7 +237,7 @@ RSpec.describe Lachisis::Layout::Crossings do
       # C           \-- 2 C
       #
       # D 4 ----------- 4 D
-      let(:after_swap) { crossings.swap(nil, %i[ two five ]) }
+      let(:after_swap) { crossings.swap(nil, %i[two five]) }
 
       specify 'updates crossing counts' do
         expect(after_swap.total).to eq 2
@@ -257,7 +257,7 @@ RSpec.describe Lachisis::Layout::Crossings do
         )
       end
     end
-    
+
     pending 'need to test more cases to get full test coverage'
   end
 end

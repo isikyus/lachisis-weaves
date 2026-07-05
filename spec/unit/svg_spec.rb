@@ -38,7 +38,14 @@ RSpec.describe Lachisis::SVG do
 
       # TODO: decorate RSpec failures to do this?
       specify 'exports SVG to a text file for comparison' do
-        File.open(File.join(File.dirname(File.dirname(__FILE__)), 'output', 'basic.svg'), 'w') do |f|
+        File.open(
+          File.join(
+            File.dirname(File.dirname(__FILE__)),
+            'output',
+            'basic.svg'
+          ),
+          'w'
+        ) do |f|
           f.puts svg_xml
         end
       end
@@ -115,10 +122,11 @@ RSpec.describe Lachisis::SVG do
         _, x1, y1, x2, y2 = *first_coords.to_a.map(&:to_f)
 
         labels = svg_xml.xpath("//xmlns:text[text()='alice']")
-          .sort_by { |l| l['x'].to_f }
+                        .sort_by { |l| l['x'].to_f }
         expect(labels.length).to eq 3
 
-        expect(labels.map { |l| l['text-anchor'] }).to eq ['end', 'middle', 'start']
+        expect(labels.map { |l| l['text-anchor'] })
+          .to eq ['end', 'middle', 'start']
         expect(labels.map { |l| l['y'].to_f }).to eq [y1, y1, y1]
       end
 
@@ -195,11 +203,18 @@ RSpec.describe Lachisis::SVG do
 
       before do
         allow(layout).to receive(:layout)
-                           .and_return([['somewhere'], [:faithful, :prodigal]])
+          .and_return([['somewhere'], [:faithful, :prodigal]])
       end
 
       specify 'exports SVG to a text file for comparison' do
-        File.open(File.join(File.dirname(File.dirname(__FILE__)), 'output', 'prodigal.svg'), 'w') do |f|
+        File.open(
+          File.join(
+            File.dirname(File.dirname(__FILE__)),
+            'output',
+            'prodigal.svg'
+          ),
+          'w'
+        ) do |f|
           f.puts svg_xml
         end
       end
@@ -208,8 +223,8 @@ RSpec.describe Lachisis::SVG do
         thread1 = svg_xml.css('#thread_faithful_0')
         expect(thread1.length).to eq 1
         coords1 = thread1[0]['d']
-          .match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)[1..]
-          .map(&:to_f)
+                  .match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)[1..]
+                  .map(&:to_f)
         expect(coords1).not_to be_nil
 
         # TODO: really should test for all possible overlaps - maybe in a bigger
@@ -256,8 +271,8 @@ RSpec.describe Lachisis::SVG do
 
         # TODO: probably want a helper for this?
         coords = thread[0]['d']
-          .scan(/M ((#{NUM} #{NUM}\s*)+)/)
-          .map { |path| path[0].scan(NUM).map(&:to_i) }
+                 .scan(/M ((#{NUM} #{NUM}\s*)+)/)
+                 .map { |path| path[0].scan(NUM).map(&:to_i) }
         expect(coords.length).to eq 2
         expect(coords[0]).not_to be_nil
         expect(coords[1]).not_to be_nil

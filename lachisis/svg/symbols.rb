@@ -37,9 +37,9 @@ module Lachisis
         relative * (Constants::BASE_DURATION.to_f / DASH_RATIO.sum)
       end
 
-      def disappear(startX, y, character)
+      def disappear(start_x, y, character)
         start_of_dash = true
-        x = startX
+        x = start_x
 
         path = [*DASH_LENGTHS, 0].flat_map do |length|
           action = start_of_dash ? ['M'] : []
@@ -52,9 +52,9 @@ module Lachisis
         %{<path id="symbol_disappear_#{character}_#{x}_#{y}" class="symbol symbol_#{character} symbol-disappear" fill="none" stroke="black" stroke_width="#{Constants::THREAD_WIDTH}" d="#{path.join(' ')}"/>}
       end
 
-      def arrive(endX, y, character)
+      def arrive(end_x, y, character)
         end_of_dash = true
-        x = endX
+        x = end_x
 
         path = [*DASH_LENGTHS, 0].flat_map do |length|
           action = end_of_dash ? ['M'] : []

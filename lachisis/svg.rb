@@ -1,38 +1,16 @@
+# frozen_string_literal: true
+
 require_relative 'layout'
 require_relative 'layout/crossings'
 
 require_relative 'svg/constants'
+require_relative 'svg/metrics'
 require_relative 'svg/symbols'
 
 module Lachisis
-
   # Knows how to render a weave to SVG
   class SVG
     include Constants
-
-    # Measurement information common to the whole SVG
-    class Metrics
-      def initialize(diagram_width:, max_name_size:)
-        @width = diagram_width
-        @max_name_size = max_name_size
-        @last_location_end = 0
-      end
-
-      attr_accessor :last_location_end
-
-      def max_x
-        @width + @max_name_size * 2
-      end
-
-      def max_y
-        last_location_end + Constants::EDGE_OFFSET
-      end
-
-      # TODO: what actually is this?
-      def location_name_offset(index)
-        @max_name_size + (index * Constants::EVENT_SPACE)
-      end
-    end
 
     # @param layout [#layout] something matching the API of
     #               Layout::SortLayout#layout
@@ -42,8 +20,8 @@ module Lachisis
 
     # Make callable as a proc
     def to_proc
-      Proc.new do |weave|
-        self.call(weave)
+      proc do |weave|
+        call(weave)
       end
     end
 
@@ -51,36 +29,34 @@ module Lachisis
       threads, location_sizes = build_threads(weave)
       location_order, characters = @layout.layout(weave)
 
-      # TODO: turned off for now as crossing calculation makes assumptions about propogation that don't hold.
-      #$stderr.puts "Crossing number: #{Layout::Crossings.count(weave, location_order, characters).total}"
       $stderr.puts "Location order: #{location_order.inspect}"
 
       # The same, but for vertical space between events. This needs to be big
       # enough to fit any symbols or angled transition lines
-      cumulative_offset  = 0
+      cumulative_offset = 0
       carried_over = 0
       event_spacing = weave.frames.map do |frame|
         actions = frame.events.map(&:actions).flat_map(&:values)
         before_spacings = actions
-                            .select { [:enter].include?(_1) }
-                            .uniq
-                            .map { Symbols.new.spacing(:arrive) }
+                          .select { [:enter].include?(_1) }
+                          .uniq
+                          .map { Symbols.new.spacing(:arrive) }
         offset = BASE_DURATION + carried_over + [0, *before_spacings].max
 
         # Spacing for "leave" events apply to the _next_ event space.
         carried_over = actions
-                         .select { [:die, :exit].include?(_1) }
-                         .uniq
-                         .map do |action|
-                           case action
-                           when :die,
-                             Symbols.new.spacing(:death)
-                           when :exit
-                             Symbols.new.spacing(:disappear)
-                           else
-                             raise 'Unknown leave event type'
-                           end
-                         end.max || 0
+                       .select { %i[die exit].include?(_1) }
+                       .uniq
+                       .map do |action|
+                         case action
+                         when :die
+                           Symbols.new.spacing(:death)
+                         when :exit
+                           Symbols.new.spacing(:disappear)
+                         else
+                           raise 'Unknown leave event type'
+                         end
+                       end.max || 0
 
         cumulative_offset += offset
         cumulative_offset
@@ -105,7 +81,15 @@ module Lachisis
         location_spacing[location] = start_y
       end
 
-      $stderr.puts(location_spacing.map { |location, space| "%5d (%2d) %s" % [space, location_order.index(location) || -1, location.inspect] })
+      $stderr.puts(
+        location_spacing.map do |location, space|
+          '%<indent>5d (%<index>2d) %<location>s' % {
+            indent: space,
+            index: location_order.index(location) || -1,
+            location: location.inspect
+          }
+        end
+      )
 
       xml_data = [
         '<?xml version="1.0"?>',
@@ -114,23 +98,32 @@ module Lachisis
 
       # Draw location labels
       location_spacing.each do |loc, y_position|
-        _frame, first_frame_index = weave
-          .frames
-          .each_with_index
-          .detect { |f, _i| f.events.map(&:location).include?(loc) }
-
         label_y = y_position + (location_sizes[loc] * THREAD_SPACING / 2.0)
         label_x = event_spacing.first
-        xml_data << %{<text x="#{label_x - LABEL_OFFSET}" y="#{label_y}" text-anchor="end" dominant-baseline="middle" font-size="#{FONT_SIZE * 2}" opacity="0.5">#{loc}</text> }
+        xml_data << %{
+          <text
+            x="#{label_x - LABEL_OFFSET}"
+            y="#{label_y}"
+            text-anchor="end"
+            dominant-baseline="middle"
+            font-size="#{FONT_SIZE * 2}"
+            opacity="0.5"
+          >#{loc}</text>
+        }
       end
 
       # Draw character threads
-      relabel_phase = 0
+      # relabel_phase = 0 # TODO: use this
       relabel_offset = 0
       threads.each do |character, events|
-
-        path = events_to_points(character, events, metrics, characters, location_spacing, event_spacing)
-        path_points = simplify(path)
+        raw_path = events_to_points(
+          character,
+          events,
+          characters,
+          location_spacing,
+          event_spacing
+        )
+        path_points = simplify(raw_path)
 
         # Insert labels at intervals in straight lines
         relabel_offset = (relabel_offset * PHI) % RELABEL_INTERVAL
@@ -144,18 +137,18 @@ module Lachisis
         drawing = true
         path_points.each_cons(2).map do |segment|
           p0, p1 = *segment
-          x0, y0, _ = *p0
+          x0, y0, = *p0
           x1, y1, event = *p1
 
           # Only consider 'enter' events worth a symbol if we were previously blanked.
           event = :appear if drawing && event == :enter
-          symbols << [x1, y1, event] unless [:present, :appear].include?(event)
+          symbols << [x1, y1, event] unless %i[present, appear].include?(event)
 
           if event == :exit
             drawing = false
             distance_until_relabel = RELABEL_INTERVAL - relabel_offset
             next
-          elsif drawing == false
+          elsif !drawing
             drawing = true
             paths.last << [x0, y0]
             paths.last << 'M'
@@ -208,18 +201,8 @@ module Lachisis
           xml_data << %{<path id="thread_#{character}_#{index}" fill="none" stroke="black" stroke_width="3" d="M #{path.flatten.join(' ')}"/>}
         end
 
-        symbols.each_with_index do |point_event, index|
+        symbols.each do |point_event|
           x, y, event = *point_event
-          text_positioning =
-            if Event::ARRIVE.include?(event)
-              [-LABEL_OFFSET, 'end']
-            elsif Event::DEPART.include?(event)
-              [+LABEL_OFFSET, 'start']
-            else
-              [0, 'middle']
-            end
-          x_offset, anchor = *text_positioning
-
           case event
           when :die
             xml_data << Symbols.new.death(x, y, character)
@@ -230,7 +213,6 @@ module Lachisis
           else
             $stderr.puts("No symbol available for event type #{event.inspect}")
           end
-          #xml_data << %{<text id="event_#{event}_#{index}" x="#{x + x_offset}" y="#{y}" text-anchor="#{anchor}" dominant-baseline="middle" font-size="#{FONT_SIZE}" color="red">#{event}</text>}
         end
 
         start_x, start_y, *, end_x, end_y, _ = *path_points.flatten
@@ -245,7 +227,7 @@ module Lachisis
 
     private
 
-    def events_to_points(character, events, metrics, characters, location_spacing, event_spacing)
+    def events_to_points(character, events, characters, location_spacing, event_spacing)
       events.flat_map do |index_and_event|
         index_and_event => {index:, event:}
         x = event_spacing[index]
@@ -257,7 +239,6 @@ module Lachisis
         y = location_spacing[event.location]
         y += character_row * THREAD_SPACING
 
-        last_location = event.location
         [
           [x, y, event.initial_action(character)],
           [x + BASE_DURATION, y, event.final_action(character)]
@@ -267,7 +248,6 @@ module Lachisis
 
     def simplify(path_points)
       # Simplify path to make relabelling easier
-      before = path_points.length
       relevant_points = path_points.each_cons(3).map do |p0, p1, p2|
         # Ignore points which are (a) collinear, and
         # (b) don't have any interesting events
@@ -277,13 +257,11 @@ module Lachisis
           p1
         end
       end
-      path_points = [
+      [
         path_points.first,
         *relevant_points.compact,
         path_points.last
       ]
-
-      path_points
     end
 
     # @param p1, p1, p3 [Array<Integer, Object>] Possibly-annotated points,

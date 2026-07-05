@@ -1,10 +1,15 @@
+# frozen_string_literal: true
+
 require 'lachisis/event'
 require 'lachisis/layout/crossings'
 require 'lachisis/weave'
 
 RSpec.describe Lachisis::Layout::Crossings do
+  subject(:crossings) do
+    described_class.count(weave, location_order, character_order)
+  end
+
   let(:weave) { Lachisis::Weave.new }
-  subject(:crossings) { Lachisis::Layout::Crossings.count(weave, location_order, character_order) }
 
   before do
     # Initial layout (assuming lexicographic ordering)
@@ -222,6 +227,7 @@ RSpec.describe Lachisis::Layout::Crossings do
         weave.add(0, 0, Lachisis::Event.new('A', { five: :arrive }))
         weave.add(0, 1, Lachisis::Event.new('B', { five: :arrive }))
       end
+
       let(:location_order) { %w[A B C D] }
       let(:character_order) { %i[two one three four five] }
 

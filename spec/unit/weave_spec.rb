@@ -1,10 +1,14 @@
+# frozen_string_literal: true
+
 require 'lachisis/event'
 require 'lachisis/weave'
 
 RSpec.describe Lachisis::Weave do
-  subject(:weave) { Lachisis::Weave.new }
+  subject(:weave) { described_class.new }
 
-  let(:event) { Lachisis::Event.new('somewhere', { alice: :present, bob: :present }) }
+  let(:event) do
+    Lachisis::Event.new('somewhere', { alice: :present, bob: :present })
+  end
   let(:major_time) { 100 }
   let(:minor_time) { 10 }
 
@@ -204,8 +208,10 @@ RSpec.describe Lachisis::Weave do
       before do
         weave.add(
           20, 0,
-          Lachisis::Event.new('delphi',
-                              { pythia: :die, hercules: :depart, apollo: :present })
+          Lachisis::Event.new(
+            'delphi',
+            { pythia: :die, hercules: :depart, apollo: :present }
+          )
         )
         weave.add(
           20, 5,
@@ -229,8 +235,10 @@ RSpec.describe Lachisis::Weave do
       specify 'does not infer location between a departure and subsequent arrival' do
         weave.add(
           30, 0,
-          Lachisis::Event.new('hades',
-                              { pythia: :arrive, hercules: :arrive, apollo: :arrive })
+          Lachisis::Event.new(
+            'hades',
+            { pythia: :arrive, hercules: :arrive, apollo: :arrive }
+          )
         )
 
         weave.propagate!
@@ -301,7 +309,9 @@ RSpec.describe Lachisis::Weave do
   end
 
   describe '#threads' do
-    let(:together_at_home) { Lachisis::Event.new('home', { hestia: :present, mercury: :present }) }
+    let(:together_at_home) do
+      Lachisis::Event.new('home', { hestia: :present, mercury: :present })
+    end
     let(:mercury_alone) { Lachisis::Event.new('home', { mercury: :present }) }
     let(:hestia_alone) { Lachisis::Event.new('afar', { hestia: :arrive }) }
 
@@ -313,8 +323,6 @@ RSpec.describe Lachisis::Weave do
       end
 
       specify 'returns characters\' individual event sequences' do
-        threads = weave.threads
-
         expect(weave.threads[:hestia].map(&:event))
           .to eq [together_at_home, hestia_alone]
         expect(weave.threads[:mercury].map(&:event))
@@ -322,7 +330,6 @@ RSpec.describe Lachisis::Weave do
       end
 
       specify 'returns adds correct timestamps to events' do
-        threads = weave.threads
         timestamps = weave.frames.map(&:timestamp)
 
         expect(weave.threads[:hestia].map(&:timestamp))

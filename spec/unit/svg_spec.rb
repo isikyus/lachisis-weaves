@@ -10,9 +10,8 @@ require 'nokogiri'
 
 RSpec.describe Lachisis::SVG do
   include SvgHelpers
-  NUM = SvgHelpers::NUM
 
-  subject(:svg) { Lachisis::SVG.new(layout) }
+  subject(:svg) { described_class.new(layout) }
 
   let(:layout) do
     spy(:layout)
@@ -21,6 +20,8 @@ RSpec.describe Lachisis::SVG do
   let(:svg_xml) do
     Nokogiri::XML.parse(svg.call(weave))
   end
+
+  let(:num) { SvgHelpers::NUM }
 
   describe '#call' do
     context 'with a basic weave without crossings' do
@@ -54,7 +55,7 @@ RSpec.describe Lachisis::SVG do
         thread = svg_xml.css('#thread_alice_0')
         expect(thread.length).to eq 1
 
-        coords = thread[0]['d'].match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)
+        coords = thread[0]['d'].match(/M (#{num}) (#{num}) (#{num}) (#{num})/)
         expect(coords).not_to be_nil
 
         _, x1, y1, x2, y2 = *coords.to_a.map(&:to_f)
@@ -68,16 +69,20 @@ RSpec.describe Lachisis::SVG do
 
       specify 'labels it with the character name' do
         thread = svg_xml.css('#thread_alice_0')
-        coords = thread[0]['d'].match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)
+        coords = thread[0]['d'].match(/M (#{num}) (#{num}) (#{num}) (#{num})/)
         x1, y1, x2, y2 = *coords[1..].map(&:to_f)
 
         labels = svg_xml.xpath("//xmlns:text[text()='alice']")
         expect(labels.length).to eq 2
 
-        left_label = svg_xml.xpath("//xmlns:text[text()='alice'][@text-anchor='end']")
+        left_label = svg_xml.xpath(
+          "//xmlns:text[text()='alice'][@text-anchor='end']"
+        )
         expect(left_label.length).to eq 1
 
-        right_label = svg_xml.xpath("//xmlns:text[text()='alice'][@text-anchor='start']")
+        right_label = svg_xml.xpath(
+          "//xmlns:text[text()='alice'][@text-anchor='start']"
+        )
         expect(right_label.length).to eq 1
 
         expect(left_label[0]['x'].to_f).to be < x1
@@ -89,7 +94,9 @@ RSpec.describe Lachisis::SVG do
 
       specify 'labels the location' do
         thread = svg_xml.css('#thread_alice_0')
-        coords = thread[0]['d'].match(/M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/)
+        coords = thread[0]['d'].match(
+          /M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/
+        )
         x1, y1, _x2, _y2 = *coords[1..].map(&:to_f)
 
         location_label = svg_xml.xpath('//xmlns:text[text()="somewhere"]')
@@ -118,7 +125,9 @@ RSpec.describe Lachisis::SVG do
 
       specify 'adds an extra character label' do
         first_thread = svg_xml.css('#thread_alice_0')
-        first_coords = first_thread[0]['d'].match(/M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/)
+        first_coords = first_thread[0]['d'].match(
+          /M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/
+        )
         _, x1, y1, x2, y2 = *first_coords.to_a.map(&:to_f)
 
         labels = svg_xml.xpath("//xmlns:text[text()='alice']")
@@ -126,18 +135,22 @@ RSpec.describe Lachisis::SVG do
         expect(labels.length).to eq 3
 
         expect(labels.map { |l| l['text-anchor'] })
-          .to eq ['end', 'middle', 'start']
+          .to eq %w[end middle start]
         expect(labels.map { |l| l['y'].to_f }).to eq [y1, y1, y1]
       end
 
       specify 'lines up both halves of the line' do
         first_thread = svg_xml.css('#thread_alice_0')
-        first_coords = first_thread[0]['d'].match(/M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/)
+        first_coords = first_thread[0]['d'].match(
+          /M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/
+        )
         _, x1a, y1a, x2a, y2a = *first_coords.to_a.map(&:to_f)
 
         second_thread = svg_xml.css('#thread_alice_1')
         expect(second_thread).not_to be_empty
-        second_coords = second_thread[0]['d'].match(/M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/)
+        second_coords = second_thread[0]['d'].match(
+          /M ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+) ([[:digit:].]+)/
+        )
         _, x1b, y1b, x2b, y2b = *second_coords.to_a.map(&:to_f)
 
         expect(x1a).to be < x2a
@@ -161,21 +174,25 @@ RSpec.describe Lachisis::SVG do
 
       before do
         allow(layout).to receive(:layout)
-          .and_return([['somewhere', 'nowhere'],
-                       [:alice, :bob]])
+          .and_return([%w[somewhere nowhere],
+                       %i[alice bob]])
       end
 
       specify 'crosses their lines over' do
         thread_a = svg_xml.css('#thread_alice_0')
         expect(thread_a.length).to eq 1
 
-        coords_a = thread_a[0]['d'].match(/M (#{NUM}) (#{NUM}) .* (#{NUM}) (#{NUM})/)
+        coords_a = thread_a[0]['d'].match(
+          /M (#{num}) (#{num}) .* (#{num}) (#{num})/
+        )
         expect(coords_a).not_to be_nil
 
         thread_b = svg_xml.css('#thread_bob_0')
         expect(thread_b.length).to eq 1
 
-        coords_b = thread_b[0]['d'].match(/M (#{NUM}) (#{NUM}) .* (#{NUM}) (#{NUM})/)
+        coords_b = thread_b[0]['d'].match(
+          /M (#{num}) (#{num}) .* (#{num}) (#{num})/
+        )
         expect(coords_b).not_to be_nil
 
         _, x1a, y1a, x2a, y2a = *coords_a.to_a.map(&:to_f)
@@ -203,7 +220,7 @@ RSpec.describe Lachisis::SVG do
 
       before do
         allow(layout).to receive(:layout)
-          .and_return([['somewhere'], [:faithful, :prodigal]])
+          .and_return([['somewhere'], %i[faithful prodigal]])
       end
 
       specify 'exports SVG to a text file for comparison' do
@@ -223,7 +240,7 @@ RSpec.describe Lachisis::SVG do
         thread1 = svg_xml.css('#thread_faithful_0')
         expect(thread1.length).to eq 1
         coords1 = thread1[0]['d']
-                  .match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)[1..]
+                  .match(/M (#{num}) (#{num}) (#{num}) (#{num})/)[1..]
                   .map(&:to_f)
         expect(coords1).not_to be_nil
 
@@ -232,7 +249,7 @@ RSpec.describe Lachisis::SVG do
         # thread2 = svg_xml.css('#thread_prodigal_0')
         # expect(thread2.length).to eq 1
         # coords2 =
-        #   thread2[0]['d'].match(/(#{NUM}) (#{NUM}) M (#{NUM}) (#{NUM})/)[1..]
+        #   thread2[0]['d'].match(/(#{num}) (#{num}) M (#{num}) (#{num})/)[1..]
         #   .map(&:to_f)
         # expect(coords2).not_to be_nil
 
@@ -253,7 +270,7 @@ RSpec.describe Lachisis::SVG do
         thread = svg_xml.css('#thread_faithful_0')
         expect(thread.length).to eq 1
 
-        coords = thread[0]['d'].match(/M (#{NUM}) (#{NUM}) (#{NUM}) (#{NUM})/)
+        coords = thread[0]['d'].match(/M (#{num}) (#{num}) (#{num}) (#{num})/)
         expect(coords).not_to be_nil
 
         _, x1, y1, x2, y2 = *coords.to_a.map(&:to_f)
@@ -271,8 +288,8 @@ RSpec.describe Lachisis::SVG do
 
         # TODO: probably want a helper for this?
         coords = thread[0]['d']
-                 .scan(/M ((#{NUM} #{NUM}\s*)+)/)
-                 .map { |path| path[0].scan(NUM).map(&:to_i) }
+                 .scan(/M ((#{num} #{num}\s*)+)/)
+                 .map { |path| path[0].scan(num).map(&:to_i) }
         expect(coords.length).to eq 2
         expect(coords[0]).not_to be_nil
         expect(coords[1]).not_to be_nil

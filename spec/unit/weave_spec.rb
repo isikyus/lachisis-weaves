@@ -1,10 +1,14 @@
+# frozen_string_literal: true
+
 require 'lachisis/event'
 require 'lachisis/weave'
 
 RSpec.describe Lachisis::Weave do
-  subject(:weave) { Lachisis::Weave.new }
+  subject(:weave) { described_class.new }
 
-  let(:event) { Lachisis::Event.new('somewhere', { alice: :present, bob: :present }) }
+  let(:event) do
+    Lachisis::Event.new('somewhere', { alice: :present, bob: :present })
+  end
   let(:major_time) { 100 }
   let(:minor_time) { 10 }
 
@@ -24,9 +28,14 @@ RSpec.describe Lachisis::Weave do
       expect(frame.events).to eq Set[event]
     end
 
-
     context 'with an event already' do
-      let(:existing_event) { Lachisis::Event.new('elsewhere', { iolillia: :present, sophie: :present }) }
+      let(:existing_event) do
+        Lachisis::Event.new(
+          'elsewhere',
+          { iolillia: :present,
+            sophie: :present }
+        )
+      end
 
       context 'at the same time' do
         before { weave.add(major_time, minor_time, existing_event) }
@@ -49,7 +58,10 @@ RSpec.describe Lachisis::Weave do
 
           merged_event = frame.events.first
           expect(merged_event.location).to eq existing_event.location
-          expect(merged_event.actions).to eq(sophie: :present, iolillia: :present, alice: :present, bob: :present)
+          expect(merged_event.actions).to eq(sophie: :present,
+                                             iolillia: :present,
+                                             alice: :present,
+                                             bob: :present)
         end
       end
 
@@ -74,7 +86,8 @@ RSpec.describe Lachisis::Weave do
         specify 'keeps events in order regardless of time added' do
           weave.add(major_time - 10, minor_time + 10, event)
 
-          expect(weave.frames.map(&:events)).to eq [Set[event], Set[existing_event]]
+          expect(weave.frames.map(&:events)).to eq [Set[event],
+                                                    Set[existing_event]]
         end
       end
     end
@@ -83,10 +96,25 @@ RSpec.describe Lachisis::Weave do
   describe '#propagate!' do
     context 'with multiple events and time between them' do
       before do
-        weave.add(10, 0, Lachisis::Event.new('home', { alice: :present, bob: :present }))
-        weave.add(10, 0, Lachisis::Event.new('delphi', { sue: :present }))
-        weave.add(20, 0, Lachisis::Event.new('delphi', { alice: :arrive, oracle: :present }))
-        weave.add(20, 5, Lachisis::Event.new('home', { alice: :arrive, cathy: :present, sue: :arrive }))
+        weave.add(
+          10, 0,
+          Lachisis::Event.new('home',
+                              { alice: :present, bob: :present })
+        )
+        weave.add(
+          10, 0,
+          Lachisis::Event.new('delphi', { sue: :present })
+        )
+        weave.add(
+          20, 0,
+          Lachisis::Event.new('delphi',
+                              { alice: :arrive, oracle: :present })
+        )
+        weave.add(
+          20, 5,
+          Lachisis::Event.new('home',
+                              { alice: :arrive, cathy: :appear, sue: :arrive })
+        )
       end
 
       specify 'assumes people stay in place after their last event' do
@@ -114,7 +142,7 @@ RSpec.describe Lachisis::Weave do
         expect(start_at_delphi.characters).to eq Set[:oracle, :sue]
 
         expect(start_at_home.location).to eq 'home'
-        expect(start_at_home.characters).to eq Set[:alice, :bob, :cathy]
+        expect(start_at_home.characters).to eq Set[:alice, :bob]
       end
 
       specify 'between events at different locations, assumes people travel to their next "present" location' do
@@ -133,7 +161,7 @@ RSpec.describe Lachisis::Weave do
         expect(middle_at_delphi.characters).to eq Set[:oracle, :alice]
 
         expect(middle_at_home.location).to eq 'home'
-        expect(middle_at_home.characters).to eq Set[:bob, :cathy, :sue]
+        expect(middle_at_home.characters).to eq Set[:bob, :sue]
       end
 
       specify 'between events at different locations, assumes people do not yet travel to an "arrive" location' do
@@ -152,14 +180,18 @@ RSpec.describe Lachisis::Weave do
         expect(middle_at_delphi.characters).to eq Set[:oracle, :sue, :alice]
 
         expect(middle_at_home.location).to eq 'home'
-        expect(middle_at_home.characters).to eq Set[:bob, :cathy]
+        expect(middle_at_home.characters).to eq Set[:bob]
       end
     end
 
     context 'with "arrive" events rather than "present"' do
       specify 'does not assume they were there before their first event' do
         weave.add(20, 0, Lachisis::Event.new('delphi', { alice: :arrive }))
-        weave.add(20, 5, Lachisis::Event.new('home', { alice: :arrive, sue: :arrive }))
+        weave.add(
+          20, 5,
+          Lachisis::Event.new('home',
+                              { alice: :arrive, sue: :arrive })
+        )
 
         weave.propagate!
 
@@ -174,8 +206,17 @@ RSpec.describe Lachisis::Weave do
 
     context 'with explicit "depart" or "die" events' do
       before do
-        weave.add(20, 0, Lachisis::Event.new('delphi', { pythia: :die, hercules: :depart, apollo: :present }))
-        weave.add(20, 5, Lachisis::Event.new('olympus', { apollo: :arrive }))
+        weave.add(
+          20, 0,
+          Lachisis::Event.new(
+            'delphi',
+            { pythia: :die, hercules: :depart, apollo: :present }
+          )
+        )
+        weave.add(
+          20, 5,
+          Lachisis::Event.new('olympus', { apollo: :arrive })
+        )
 
         # Not propogating here as one test needs extra following events
       end
@@ -192,7 +233,13 @@ RSpec.describe Lachisis::Weave do
       end
 
       specify 'does not infer location between a departure and subsequent arrival' do
-        weave.add(30, 0, Lachisis::Event.new('hades', { pythia: :arrive, hercules: :arrive, apollo: :arrive }))
+        weave.add(
+          30, 0,
+          Lachisis::Event.new(
+            'hades',
+            { pythia: :arrive, hercules: :arrive, apollo: :arrive }
+          )
+        )
 
         weave.propagate!
 
@@ -206,13 +253,25 @@ RSpec.describe Lachisis::Weave do
     end
 
     context 'with someone whose last location had a higher minor timestamp' do
-
       context 'using :arrive' do
         before do
-          weave.add(1.6, 1, Lachisis::Event.new('pans-house', { pan: :present }))
-          weave.add(1.6, 2, Lachisis::Event.new('great-pillar', { pan: :present, sync: :present }))
-          weave.add(1.7, 0, Lachisis::Event.new('elsewhere', { random: :depart }))
-          weave.add(1.9, 0, Lachisis::Event.new('kitchen', { sync: :arrive }))
+          weave.add(
+            1.6, 1,
+            Lachisis::Event.new('pans-house', { pan: :present })
+          )
+          weave.add(
+            1.6, 2,
+            Lachisis::Event.new('great-pillar',
+                                { pan: :present, sync: :present })
+          )
+          weave.add(
+            1.7, 0,
+            Lachisis::Event.new('elsewhere', { random: :depart })
+          )
+          weave.add(
+            1.9, 0,
+            Lachisis::Event.new('kitchen', { sync: :arrive })
+          )
 
           weave.propagate!
         end
@@ -220,7 +279,7 @@ RSpec.describe Lachisis::Weave do
         specify 'puts them in the frame they were in most recently' do
           epilogues = weave.frames.last.events.sort_by(&:location)
 
-          expect(epilogues.map(&:location)).to eq(%w[ great-pillar kitchen ])
+          expect(epilogues.map(&:location)).to eq(%w[great-pillar kitchen])
           pillar, kitchen = *epilogues
 
           expect(pillar.characters).to eq(Set[:pan])
@@ -250,7 +309,9 @@ RSpec.describe Lachisis::Weave do
   end
 
   describe '#threads' do
-    let(:together_at_home) { Lachisis::Event.new('home', { hestia: :present, mercury: :present }) }
+    let(:together_at_home) do
+      Lachisis::Event.new('home', { hestia: :present, mercury: :present })
+    end
     let(:mercury_alone) { Lachisis::Event.new('home', { mercury: :present }) }
     let(:hestia_alone) { Lachisis::Event.new('afar', { hestia: :arrive }) }
 
@@ -262,18 +323,19 @@ RSpec.describe Lachisis::Weave do
       end
 
       specify 'returns characters\' individual event sequences' do
-        threads = weave.threads
-
-        expect(weave.threads[:hestia].map(&:event)).to eq [together_at_home, hestia_alone]
-        expect(weave.threads[:mercury].map(&:event)).to eq [together_at_home, mercury_alone]
+        expect(weave.threads[:hestia].map(&:event))
+          .to eq [together_at_home, hestia_alone]
+        expect(weave.threads[:mercury].map(&:event))
+          .to eq [together_at_home, mercury_alone]
       end
 
       specify 'returns adds correct timestamps to events' do
-        threads = weave.threads
         timestamps = weave.frames.map(&:timestamp)
 
-        expect(weave.threads[:hestia].map(&:timestamp)).to eq timestamps.values_at(0, 1)
-        expect(weave.threads[:mercury].map(&:timestamp)).to eq timestamps.values_at(0, 2)
+        expect(weave.threads[:hestia].map(&:timestamp))
+          .to eq timestamps.values_at(0, 1)
+        expect(weave.threads[:mercury].map(&:timestamp))
+          .to eq timestamps.values_at(0, 2)
       end
     end
 
@@ -281,7 +343,8 @@ RSpec.describe Lachisis::Weave do
       weave.add(+100, 0, mercury_alone)
       weave.add(-100, 0, together_at_home)
 
-      expect(weave.threads[:mercury].map(&:event)).to eq [together_at_home, mercury_alone]
+      expect(weave.threads[:mercury].map(&:event))
+        .to eq [together_at_home, mercury_alone]
     end
   end
 end

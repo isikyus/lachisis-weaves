@@ -15,11 +15,11 @@ module Lachisis
       new.run
     end
 
-    def initialize
-      option_parser.parse!
+    def initialize(cli_args = ARGV)
+      option_parser.parse!(cli_args)
 
       # Filename is a non-option argument
-      @xml_file = filename_from_argv
+      @xml_file = filename_from_argv(cli_args)
     end
 
     def run
@@ -27,6 +27,20 @@ module Lachisis
       puts render(weave)
     rescue Lachisis::Parser::LineNumberAware::LocatedError => e
       die(e.message)
+    end
+
+    # @api private
+    def weave_from_xml(filename)
+      weave = nil
+
+      # TODO: could move these two lines into Lachisis::Parser
+      sax_processor = Lachisis::Parser.new { |w| weave = w }
+      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
+      sax_parser.parse(filename)
+
+      raise 'Expected callback to set weave' unless weave
+
+      weave
     end
 
     private
@@ -43,26 +57,13 @@ module Lachisis
       end
     end
 
-    def filename_from_argv
-      if ARGV.length == 1
-        ARGV[0]
+    def filename_from_argv(cli_args)
+      if cli_args.length == 1
+        cli_args[0]
       else
         die("#{option_parser.help} \n\n" \
-            "Expected 1 non-option arg; got #{ARGV.length}: #{ARGV.inspect}")
+            "Expected 1 non-option arg; got #{cli_args.length}: #{cli_args.inspect}")
       end
-    end
-
-    def weave_from_xml(filename)
-      weave = nil
-
-      # TODO: could move these two lines into Lachisis::Parser
-      sax_processor = Lachisis::Parser.new { |w| weave = w }
-      sax_parser = Lachisis::Parser::LineNumberAware.new(sax_processor)
-      sax_parser.parse(filename)
-
-      raise 'Expected callback to set weave' unless weave
-
-      weave
     end
 
     # @return [#to_proc]

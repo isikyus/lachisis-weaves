@@ -38,15 +38,15 @@ Examples:
 * `<?lachisis location:somewhere enter:someone ?>` Record an event that `someone`
   arrived at `somewhere`, using the current major timestamp (default 0.0),
   and the next minor timestamp (whatever the last event's minor timestamp
-  was, plus one; starts at 0).
+  was, plus one; starts at 0). "Arrive" means they were somewhere else beforehand.
 
 * `<?lachisis location:somewhere present:someone ?>` As above, except records
-    that `someone` was here already at the current time (i.e. earlier than anyone
-    arriving in this same event.
+  that `someone` was here already at the current time (i.e. earlier than anyone
+  arriving in this same event.
 
-  * [ ] Currently equivalent to `enter:` but should really cause propogation
-    to behave somewhat differently (i.e. it will affect where the character
-    is shown as being before they appear in this event).
+* `<?lachisis location:somewhere appear:someone ?>` As above, but with no implication
+   about their previous location. They might have been here, or somewhere else;
+   we just don't know.
 
 * `<?lachisis enter:another_person ?>` Record a new event at the current location
   (wherever the last event was), with all the current characters plus

@@ -1,5 +1,6 @@
-require 'open3'
+# frozen_string_literal: true
 
+require 'open3'
 
 RSpec.describe 'read_events.rb' do
   LACHISIS_PATH = File.dirname(File.dirname(__dir__))
@@ -15,7 +16,7 @@ RSpec.describe 'read_events.rb' do
     )
 
     # TODO: can't test this yet without a -q option or similar
-    #expect(error).to be_empty
+    # expect(error).to be_empty
     expect(status).to eq 0
 
     output

@@ -11,10 +11,14 @@ module Lachisis
     # at this location prior to this event.
     ARRIVE = %i[arrive enter].freeze
 
-    # Indicate this is a character's last appearence in a location
+    # Indicates only that the character was in this location, with no implication
+    # about where they were before or afterwards.
+    APPEAR = %i[ appear ].freeze
+
+    # Indicate this is a character's last appearance in a location
     DEPART = %i[depart exit die].freeze
 
-    ACTION_TYPES = PRESENT + ARRIVE + DEPART
+    ACTION_TYPES = PRESENT + ARRIVE + DEPART + APPEAR
 
     def initialize(location, actions)
       invalid_types = actions.values.uniq - ACTION_TYPES
@@ -52,6 +56,16 @@ module Lachisis
                        .join(', ')
 
       'At %<loc>15s : %<acts>s' % { loc: location, acts: actions_string }
+    end
+
+    def initial_action(character)
+      action = @actions[character]
+      ARRIVE.include?(action) ? action : :present
+    end
+
+    def final_action(character)
+      action = @actions[character]
+      DEPART.include?(action) ? action : :present
     end
   end
 
